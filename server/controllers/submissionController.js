@@ -1,5 +1,6 @@
 const Submission             = require('../models/Submission');
 const Assignment             = require('../models/Assignment');
+const User                   = require('../models/User');
 const { createNotification } = require('../services/notificationService');
 const fs                     = require('fs');
 const path                   = require('path');
@@ -134,12 +135,10 @@ exports.getSubmission = async (req, res) => {
 };
 
 // ── GRADE submission (lecturer) ───────────────────────────────────────────────
-// Triggers a "marks_received" notification when the grade is published.
 exports.gradeSubmission = async (req, res) => {
   try {
     const { score, grade, feedback, rubricScores, published, corrections } = req.body;
 
-    // Fetch existing submission to check previous published state
     const existing = await Submission.findById(req.params.id).populate('student', 'username email');
     if (!existing) return res.status(404).json({ success: false, message: 'Submission not found' });
 
@@ -158,7 +157,6 @@ exports.gradeSubmission = async (req, res) => {
       { new: true }
     ).populate('student', 'username email');
 
-    // ── Notify student when marks are published for the first time ───────────
     if (published && !wasAlreadyPublished && sub.student?._id) {
       const scoreText  = score != null ? `You scored ${score}%` : '';
       const gradeText  = grade         ? ` (${grade})`          : '';
@@ -184,8 +182,6 @@ exports.gradeSubmission = async (req, res) => {
 };
 
 // ── ACCEPT regrade request (lecturer) ────────────────────────────────────────
-// Call this when the lecturer reviews and accepts the regrade.
-// If you have a dedicated regrade endpoint, add this notification there too.
 exports.acceptRegrade = async (req, res) => {
   try {
     const { score, grade, feedback } = req.body;
@@ -204,7 +200,6 @@ exports.acceptRegrade = async (req, res) => {
 
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
 
-    // ── Notify the student ────────────────────────────────────────────────────
     if (sub.student?._id) {
       const scoreText = score != null ? `New score: ${score}%` : '';
       const gradeText = grade         ? ` (${grade})`          : '';
@@ -376,6 +371,163 @@ exports.getDashboardStats = async (req, res) => {
       stats: { average: avgScore, grade: getGrade(avgScore), total, graded: graded.length, pending, modules, bestModule },
     });
   } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PRE-APPROVAL WORKFLOW
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── SUBMIT for approval (student) ─────────────────────────────────────────────
+exports.submitForApproval = async (req, res) => {
+  try {
+    console.log('📥 submitForApproval called');
+    console.log('File:', req.file?.originalname);
+    console.log('Body:', req.body);
+
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const { moduleCode, moduleName, assignmentName, instructions, description } = req.body;
+
+    let rubric = [];
+    try { rubric = JSON.parse(req.body.rubric || '[]'); } catch {}
+
+    const sub = await Submission.create({
+      student:        req.user._id,
+      moduleCode:     moduleCode     || 'GENERAL',
+      moduleName:     moduleName     || assignmentName || 'General',
+      assignmentName: assignmentName || req.file.originalname,
+      fileName:       req.file.originalname,
+      filePath:       `submissions/${req.file.filename}`,
+      fileType:       req.file.mimetype,
+      aiAnalysis:     { status: 'pending' },
+      approvalStatus: 'pending_review',
+    });
+
+    console.log('✅ Submission created:', sub._id);
+
+    // Notify lecturers — wrapped so it never breaks the main flow
+    try {
+      const lecturers = await User.find({ role: 'lecturer' });
+      for (const lecturer of lecturers) {
+        await createNotification({
+          userId:  lecturer._id,
+          type:    'approval_requested',
+          title:   '📋 New Assignment Pending Review',
+          message: `A student submitted "${sub.assignmentName}" for your review.`,
+          meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
+        });
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Notification error (non-fatal):', notifErr.message);
+    }
+
+    const context = [
+      description  ? `Assignment Description: ${description}`  : '',
+      instructions ? `Lecturer Instructions: ${instructions}` : '',
+    ].filter(Boolean).join('\n');
+
+    runAIAnalysis(
+      sub._id,
+      `submissions/${req.file.filename}`,
+      assignmentName || req.file.originalname,
+      moduleCode     || '',
+      moduleName     || '',
+      rubric,
+      context
+    );
+
+    res.status(201).json({ success: true, submission: sub });
+  } catch (err) {
+    console.error('❌ SUBMIT FOR APPROVAL ERROR:', err.message);
+    console.error(err.stack);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── GET pending approvals (lecturer) ─────────────────────────────────────────
+exports.getPendingApprovals = async (req, res) => {
+  try {
+    const submissions = await Submission
+      .find({ approvalStatus: 'pending_review' })
+      .populate('student', 'username email studentId')
+      .sort({ submittedAt: -1 });
+
+    res.json({ success: true, submissions });
+  } catch (err) {
+    console.error('GET PENDING APPROVALS ERROR:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── APPROVE submission (lecturer) ─────────────────────────────────────────────
+exports.approveSubmission = async (req, res) => {
+  try {
+    const sub = await Submission.findByIdAndUpdate(
+      req.params.id,
+      {
+        approvalStatus: 'approved',
+        approvedAt:     new Date(),
+        status:         'Pending',
+      },
+      { new: true }
+    ).populate('student', 'username email');
+
+    if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
+
+    try {
+      await createNotification({
+        userId:  sub.student._id,
+        type:    'submission_approved',
+        title:   '✅ Assignment Approved!',
+        message: `Your assignment "${sub.assignmentName}" has been approved and officially submitted to Mentora.`,
+        meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
+      });
+    } catch (notifErr) {
+      console.error('⚠️ Notification error (non-fatal):', notifErr.message);
+    }
+
+    res.json({ success: true, submission: sub });
+  } catch (err) {
+    console.error('APPROVE ERROR:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── REJECT submission (lecturer) ──────────────────────────────────────────────
+exports.rejectSubmission = async (req, res) => {
+  try {
+    const { feedback } = req.body;
+
+    const sub = await Submission.findByIdAndUpdate(
+      req.params.id,
+      {
+        approvalStatus:   'rejected',
+        approvalFeedback: feedback || 'Your submission needs revision.',
+        rejectedAt:       new Date(),
+        status:           'Rejected',
+      },
+      { new: true }
+    ).populate('student', 'username email');
+
+    if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
+
+    try {
+      await createNotification({
+        userId:  sub.student._id,
+        type:    'submission_rejected',
+        title:   '❌ Assignment Needs Revision',
+        message: `Your assignment "${sub.assignmentName}" was not approved. Reason: ${feedback || 'Please revise and resubmit.'}`,
+        meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, feedback },
+      });
+    } catch (notifErr) {
+      console.error('⚠️ Notification error (non-fatal):', notifErr.message);
+    }
+
+    res.json({ success: true, submission: sub });
+  } catch (err) {
+    console.error('REJECT ERROR:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };

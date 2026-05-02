@@ -18,7 +18,7 @@ function AIReport({ submission }) {
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, color: '#0369a1' }}>AI Report — Analysing...</div>
             <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-              Your submission is being analysed based on the assignment rubric and instructions. Refresh in a few seconds.
+              Your submission is being analysed. Refresh in a few seconds.
             </div>
           </div>
           <div style={{ marginLeft: 'auto', width: 20, height: 20, border: '3px solid #bae6fd',
@@ -38,7 +38,7 @@ function AIReport({ submission }) {
           🤖 AI Report — Analysis Failed
         </div>
         <div style={{ fontSize: 13, color: '#6b7280' }}>
-          {ai.message || 'Could not analyse this submission. Please try re-uploading the file.'}
+          {ai.message || 'Could not analyse this submission. Please try re-uploading.'}
         </div>
       </div>
     );
@@ -195,6 +195,189 @@ function AIReport({ submission }) {
   );
 }
 
+// ── Pre-Approval Upload Component ─────────────────────────────────────────────
+function PreApprovalUpload({ assignments, submissions, onSuccess }) {
+  const [selected, setSelected]   = useState(null);
+  const [file, setFile]           = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg]             = useState('');
+
+  const draftSubs = submissions.filter(s => s.approvalStatus === 'pending_review' || s.approvalStatus === 'rejected');
+
+  const handleSubmit = async () => {
+    if (!file || !selected) return;
+    setUploading(true); setMsg('');
+    try {
+      const fd = new FormData();
+      fd.append('file',           file);
+      fd.append('moduleCode',     selected.moduleCode  || '');
+      fd.append('moduleName',     selected.moduleName  || selected.title);
+      fd.append('assignmentName', selected.title);
+      fd.append('instructions',   selected.instructions || '');
+      fd.append('description',    selected.description  || '');
+      fd.append('rubric',         JSON.stringify(selected.rubric || []));
+
+      await API.post('/submissions/submit-for-approval', fd);
+      setMsg('✅ Submitted for lecturer review! You will be notified once approved.');
+      setFile(null);
+      setSelected(null);
+      onSuccess();
+    } catch { setMsg('❌ Upload failed. Please try again.'); }
+    finally  { setUploading(false); }
+  };
+
+  const approvalStatusStyle = (status) => {
+    if (status === 'approved')       return { bg: '#d1fae5', color: '#065f46', label: '✅ Approved' };
+    if (status === 'rejected')       return { bg: '#fee2e2', color: '#991b1b', label: '❌ Rejected' };
+    if (status === 'pending_review') return { bg: '#fef3c7', color: '#92400e', label: '⏳ Pending Review' };
+    return                                  { bg: '#f3f4f6', color: '#6b7280', label: status };
+  };
+
+  return (
+    <div>
+      {/* How it works banner */}
+      <div style={{ background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)', border: '1px solid #bfdbfe',
+                    borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: '#1d4ed8', marginBottom: 12 }}>
+          📋 How Pre-Approval Works
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[
+            { step: '1', icon: '📤', label: 'Upload Draft',    desc: 'Submit your draft assignment here' },
+            { step: '2', icon: '👩‍🏫', label: 'Lecturer Reviews', desc: 'Lecturer checks your work' },
+            { step: '3', icon: '✅', label: 'Get Approved',    desc: 'You get notified of the decision' },
+            { step: '4', icon: '🎓', label: 'Auto Submitted',  desc: 'Approved work goes to Mentora' },
+          ].map(s => (
+            <div key={s.step} style={{ background: '#fff', borderRadius: 10, padding: '14px 16px',
+                                       textAlign: 'center', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Upload Form */}
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12,
+                    padding: '24px 28px', marginBottom: 24 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 16 }}>
+          📤 Submit Draft for Review
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151',
+                          display: 'block', marginBottom: 8 }}>
+            Select Assignment
+          </label>
+          <select
+            value={selected?._id || ''}
+            onChange={e => setSelected(assignments.find(a => a._id === e.target.value) || null)}
+            style={{ width: '100%', padding: '10px 14px', borderRadius: 8, fontSize: 13,
+                     border: '1px solid #d1d5db', color: '#374151', background: '#fff',
+                     outline: 'none', cursor: 'pointer' }}>
+            <option value=''>— Choose an assignment —</option>
+            {assignments.map(a => (
+              <option key={a._id} value={a._id}>{a.title} ({a.moduleCode})</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151',
+                          display: 'block', marginBottom: 8 }}>
+            Upload File (PDF or DOCX)
+          </label>
+          <div style={{ border: '2px dashed #d1d5db', borderRadius: 8, padding: '24px',
+                        textAlign: 'center', background: '#f9fafb',
+                        borderColor: file ? '#2563eb' : '#d1d5db' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📎</div>
+            <input type="file" accept=".pdf,.docx" id="draft-file"
+              onChange={e => { setFile(e.target.files[0]); setMsg(''); }}
+              style={{ display: 'none' }} />
+            <label htmlFor="draft-file"
+              style={{ color: '#2563eb', fontWeight: 600, fontSize: 13,
+                       cursor: 'pointer', textDecoration: 'underline' }}>
+              {file ? file.name : 'Click to choose file'}
+            </label>
+            {!file && (
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+                PDF or DOCX, max 50MB
+              </div>
+            )}
+          </div>
+        </div>
+
+        <button onClick={handleSubmit} disabled={!file || !selected || uploading}
+          style={{ background: file && selected && !uploading ? '#2563eb' : '#93c5fd',
+                   color: '#fff', border: 'none', borderRadius: 8,
+                   padding: '11px 28px', fontSize: 14, fontWeight: 700,
+                   cursor: file && selected && !uploading ? 'pointer' : 'not-allowed',
+                   transition: 'background 0.2s' }}>
+          {uploading ? '⏳ Submitting...' : '📤 Submit for Approval'}
+        </button>
+
+        {msg && (
+          <p style={{ marginTop: 14, fontSize: 13,
+                      color: msg.startsWith('✅') ? '#16a34a' : '#dc2626' }}>
+            {msg}
+          </p>
+        )}
+      </div>
+
+      {/* Draft submissions history */}
+      {draftSubs.length > 0 && (
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb',
+                      borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', background: '#f9fafb',
+                        borderBottom: '1px solid #e5e7eb', fontWeight: 700, fontSize: 15 }}>
+            📬 My Draft Submissions
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                {['Assignment', 'File', 'Submitted', 'Status', 'Feedback'].map(h => (
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left',
+                                       fontWeight: 600, color: '#374151', fontSize: 13 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {draftSubs.map((s, i) => {
+                const st = approvalStatusStyle(s.approvalStatus);
+                return (
+                  <tr key={s._id || i}
+                    style={{ borderBottom: '1px solid #f3f4f6',
+                             background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#374151' }}>
+                      {s.assignmentName || '—'}
+                    </td>
+                    <td style={{ padding: '14px 16px', color: '#2563eb', fontSize: 13 }}>
+                      📄 {s.fileName || '—'}
+                    </td>
+                    <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: 12 }}>
+                      {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ background: st.bg, color: st.color, borderRadius: 20,
+                                     padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>
+                        {st.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: 13 }}>
+                      {s.approvalFeedback || (s.approvalStatus === 'approved' ? 'Approved! Check your submissions.' : '—')}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function StudentSubmissions() {
   const location = useLocation();
@@ -217,7 +400,6 @@ export default function StudentSubmissions() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ── Poll every 5s while AI is analysing ──────────────────────
   useEffect(() => {
     if (viewSub && viewSub.aiAnalysis?.status === 'pending') {
       pollRef.current = setInterval(async () => {
@@ -235,7 +417,6 @@ export default function StudentSubmissions() {
     return () => clearInterval(pollRef.current);
   }, [viewSub]);
 
-  // ── Upload / Edit submission ──────────────────────────────────
   const handleUpload = async () => {
     if (!file || !selected) return;
     setUploading(true); setMsg('');
@@ -269,19 +450,16 @@ export default function StudentSubmissions() {
     finally  { setUploading(false); }
   };
 
-  // ── Remove submission ─────────────────────────────────────────
   const handleRemove = async () => {
     if (!existingSub) return;
     const removedId = existingSub._id;
     try {
       await deleteSubmission(removedId);
-      // ✅ immediately remove from local state so dashboard updates instantly
       setSubmissions(prev => prev.filter(s => s._id !== removedId));
       setSelected(null);
       setRemoving(false);
       setViewSub(null);
       setMsg('');
-      // also re-fetch to sync with server
       fetchAll();
     } catch {
       setMsg('❌ Failed to remove submission.');
@@ -296,9 +474,7 @@ export default function StudentSubmissions() {
     ? submissions.find(s => s.assignmentName === selected.title || s.assignment === selected._id)
     : null;
 
-  // ─────────────────────────────────────────────────────────────
-  // ASSIGNMENT DETAIL PAGE
-  // ─────────────────────────────────────────────────────────────
+  // ── Assignment Detail Page ─────────────────────────────────────────────────
   if (selected) {
     const past       = isPast(selected.deadline);
     const displaySub = viewSub || existingSub;
@@ -306,7 +482,6 @@ export default function StudentSubmissions() {
     return (
       <StudentLayout>
         <div style={{ padding: '30px 40px' }}>
-
           <button
             onClick={() => { setSelected(null); setMsg(''); setFile(null); setEditMode(false); setRemoving(false); setViewSub(null); clearInterval(pollRef.current); }}
             style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: 14,
@@ -491,20 +666,17 @@ export default function StudentSubmissions() {
           {past && !existingSub && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12,
                           padding: '16px 24px', color: '#dc2626', fontSize: 14, fontWeight: 600 }}>
-              ⚠️ The deadline for this assignment has passed. Submissions are no longer accepted.
+              ⚠️ The deadline for this assignment has passed.
             </div>
           )}
 
           {displaySub && <AIReport submission={displaySub} />}
-
         </div>
       </StudentLayout>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // MAIN SUBMISSIONS PAGE
-  // ─────────────────────────────────────────────────────────────
+  // ── Main Page ──────────────────────────────────────────────────────────────
   return (
     <StudentLayout>
       <div style={{ padding: '30px 40px' }}>
@@ -513,9 +685,13 @@ export default function StudentSubmissions() {
           Manage your assignments and submission history
         </p>
 
-        {/* tabs */}
+        {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: 24 }}>
-          {[['assignments','Assignments'],['history','Submission History']].map(([t, label]) => (
+          {[
+            ['assignments', 'Assignments'],
+            ['pre-approval', '📋 Pre-Approval'],
+            ['history',     'Submission History'],
+          ].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               style={{ background: 'none', border: 'none', padding: '10px 24px',
                        fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -587,6 +763,15 @@ export default function StudentSubmissions() {
           </div>
         )}
 
+        {/* PRE-APPROVAL TAB */}
+        {tab === 'pre-approval' && (
+          <PreApprovalUpload
+            assignments={assignments}
+            submissions={submissions}
+            onSuccess={fetchAll}
+          />
+        )}
+
         {/* SUBMISSION HISTORY TAB */}
         {tab === 'history' && (
           <div style={{ background: '#fff', border: '1px solid #e5e7eb',
@@ -600,7 +785,7 @@ export default function StudentSubmissions() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    {['File','Assignment','Module','Status','Submitted','Score','AI Report'].map(h => (
+                    {['File', 'Assignment', 'Module', 'Status', 'Approval', 'Submitted', 'Score', 'AI Report'].map(h => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: 'left',
                                            fontWeight: 600, color: '#374151', fontSize: 13 }}>{h}</th>
                     ))}
@@ -630,6 +815,22 @@ export default function StudentSubmissions() {
                         }}>
                           {s.status || 'Pending'}
                         </span>
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        {s.approvalStatus && (
+                          <span style={{
+                            background: s.approvalStatus === 'approved' ? '#d1fae5'
+                                      : s.approvalStatus === 'rejected' ? '#fee2e2' : '#fef3c7',
+                            color:      s.approvalStatus === 'approved' ? '#065f46'
+                                      : s.approvalStatus === 'rejected' ? '#991b1b' : '#92400e',
+                            borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700
+                          }}>
+                            {s.approvalStatus === 'approved'       ? '✅ Approved'
+                           : s.approvalStatus === 'rejected'       ? '❌ Rejected'
+                           : s.approvalStatus === 'pending_review' ? '⏳ In Review'
+                           :                                          '—'}
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '12px 16px', color: '#374151' }}>{fmt(s.submittedAt)}</td>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: '#374151' }}>

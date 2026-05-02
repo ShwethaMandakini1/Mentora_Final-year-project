@@ -14,7 +14,11 @@ const {
   getDashboardStats,
   updateSubmission,
   deleteSubmission,
-  reanalyseSubmission,   // ← NEW
+  reanalyseSubmission,
+  submitForApproval,
+  getPendingApprovals,
+  approveSubmission,
+  rejectSubmission,
 } = require('../controllers/submissionController');
 
 // ── Multer setup ──────────────────────────────────────────────────────────────
@@ -29,16 +33,23 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
-
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── Existing fixed routes (no :id) ───────────────────────────────────────────
 router.post('/',              protect, upload.single('file'), submit);
 router.get('/my',             protect, getMySubmissions);
 router.get('/all',            protect, getAllSubmissions);
 router.get('/stats',          protect, getDashboardStats);
+
+// ── Pre-Approval Routes (must be before /:id) ─────────────────────────────────
+router.post('/submit-for-approval', protect, upload.single('file'), submitForApproval);
+router.get('/pending-approvals',    protect, getPendingApprovals);
+
+// ── Routes with :id (must be last) ───────────────────────────────────────────
 router.get('/:id',            protect, getSubmission);
 router.put('/:id/grade',      protect, gradeSubmission);
-router.post('/:id/reanalyse', protect, reanalyseSubmission);   // ← NEW
+router.post('/:id/reanalyse', protect, reanalyseSubmission);
 router.put('/:id',            protect, upload.single('file'), updateSubmission);
 router.delete('/:id',         protect, deleteSubmission);
+router.patch('/:id/approve',  protect, approveSubmission);
+router.patch('/:id/reject',   protect, rejectSubmission);
 
 module.exports = router;

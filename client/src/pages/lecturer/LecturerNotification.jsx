@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import StudentLayout from './StudentLayout';
+import LecturerLayout from './LecturerLayout';
 import { useAuth } from '../../context/AuthContext';
 import {
   getNotifications,
@@ -11,22 +11,19 @@ import {
 } from '../../api/api';
 import './dashboard.css';
 
-// ── Poll interval (ms) ────────────────────────────────────────────────────────
-const POLL_INTERVAL = 30000; // 30 seconds
+const POLL_INTERVAL = 30000;
 
-// ── Notification type config ──────────────────────────────────────────────────
 const TYPE_CONFIG = {
-  new_assignment:      { icon: '📋', color: '#2563eb', bg: '#eff6ff', label: 'New Assignment'  },
-  marks_received:      { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
-  regrade_accepted:    { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
+  approval_requested:  { icon: '📋', color: '#d97706', bg: '#fef3c7', label: 'Review Request'  },
+  new_assignment:      { icon: '📝', color: '#2563eb', bg: '#eff6ff', label: 'Assignment'       },
+  marks_received:      { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks'            },
+  regrade_accepted:    { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade'         },
   deadline_reminder:   { icon: '⏰', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
-  approval_requested:  { icon: '📤', color: '#d97706', bg: '#fef3c7', label: 'Under Review'    },
-  submission_approved: { icon: '✅', color: '#16a34a', bg: '#dcfce7', label: 'Approved!'        },
-  submission_rejected: { icon: '❌', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
+  submission_approved: { icon: '✅', color: '#16a34a', bg: '#dcfce7', label: 'Approved'         },
+  submission_rejected: { icon: '❌', color: '#dc2626', bg: '#fef2f2', label: 'Rejected'         },
   default:             { icon: '🔔', color: '#6b7280', bg: '#f9fafb', label: 'Notification'     },
 };
 
-// ── Time formatter ────────────────────────────────────────────────────────────
 function timeAgo(dateStr) {
   const diff  = Date.now() - new Date(dateStr).getTime();
   const mins  = Math.floor(diff / 60000);
@@ -39,7 +36,6 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// ── Group by date ─────────────────────────────────────────────────────────────
 function groupByDate(notifications) {
   const today     = new Date(); today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
@@ -55,16 +51,13 @@ function groupByDate(notifications) {
   return groups;
 }
 
-// ── Filter tabs ───────────────────────────────────────────────────────────────
-const FILTERS = ['All', 'Unread', 'Assignments', 'Marks', 'Deadlines', 'Re-grade', 'Approvals'];
+const FILTERS = ['All', 'Unread', 'Review Requests', 'Assignments', 'Deadlines'];
 const FILTER_MAP = {
-  'All':         () => true,
-  'Unread':      n => !n.read,
-  'Assignments': n => n.type === 'new_assignment',
-  'Marks':       n => n.type === 'marks_received',
-  'Deadlines':   n => n.type === 'deadline_reminder',
-  'Re-grade':    n => n.type === 'regrade_accepted',
-  'Approvals':   n => ['approval_requested', 'submission_approved', 'submission_rejected'].includes(n.type),
+  'All':             () => true,
+  'Unread':          n => !n.read,
+  'Review Requests': n => n.type === 'approval_requested',
+  'Assignments':     n => n.type === 'new_assignment',
+  'Deadlines':       n => n.type === 'deadline_reminder',
 };
 
 const menuItemStyle = {
@@ -74,7 +67,7 @@ const menuItemStyle = {
   borderBottom: '1px solid #f3f4f6',
 };
 
-export default function StudentNotifications() {
+export default function LecturerNotifications() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -87,12 +80,10 @@ export default function StudentNotifications() {
   const pollRef   = useRef(null);
   const latestIds = useRef(new Set());
 
-  // ── Fetch notifications ───────────────────────────────────────────────────
   const fetchNotifications = useCallback(async (silent = false) => {
     try {
       const res  = await getNotifications();
       const data = res.data.notifications || [];
-
       if (silent) {
         const incoming = new Set(data.map(n => n._id));
         const added    = [...incoming].filter(id => !latestIds.current.has(id));
@@ -141,7 +132,6 @@ export default function StudentNotifications() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // ── Actions ───────────────────────────────────────────────────────────────
   const markRead = async (id) => {
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
     setMenuOpen(null);
@@ -169,32 +159,24 @@ export default function StudentNotifications() {
     await deleteAllNotifications().catch(() => {});
   };
 
-  const dismissNewBanner = () => setNewCount(0);
-
-  // ── Navigate on "View" click ──────────────────────────────────────────────
   const handleView = async (n) => {
     await markRead(n._id);
-    if (n.type === 'marks_received' || n.type === 'regrade_accepted') {
-      navigate('/student/reports');
-    } else if (n.type === 'new_assignment' || n.type === 'deadline_reminder') {
-      navigate('/student/submissions');
-    } else if (n.type === 'submission_approved' || n.type === 'submission_rejected') {
-      navigate('/student/submissions', { state: { tab: 'pre-approval' } });
+    if (n.type === 'approval_requested') {
+      navigate('/lecturer/requests');
+    } else if (n.type === 'new_assignment') {
+      navigate('/lecturer/submissions');
     }
   };
 
   const isViewable = (n) =>
-    ['marks_received', 'regrade_accepted', 'new_assignment', 'deadline_reminder',
-     'submission_approved', 'submission_rejected'].includes(n.type);
+    ['approval_requested', 'new_assignment'].includes(n.type);
 
-  // ── Filtered + grouped ────────────────────────────────────────────────────
   const filtered = notifications.filter(FILTER_MAP[activeFilter] || (() => true));
   const grouped  = groupByDate(filtered);
 
   return (
-    <StudentLayout>
+    <LecturerLayout>
 
-      {/* Topbar */}
       <div className="topbar">
         <div className="topbar-left">
           <h1>Notifications</h1>
@@ -223,31 +205,32 @@ export default function StudentNotifications() {
         {/* Profile banner */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 16px' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#e0e7ff',
+            width: 64, height: 64, borderRadius: '50%', background: '#fef3c7',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 26, fontWeight: 700, color: '#3730a3', marginBottom: 8,
-            border: '3px solid #c7d2fe',
+            fontSize: 26, fontWeight: 700, color: '#92400e', marginBottom: 8,
+            border: '3px solid #fde68a',
           }}>
-            {user?.username?.[0]?.toUpperCase() || 'S'}
+            {user?.username?.[0]?.toUpperCase() || 'L'}
           </div>
           <div style={{ fontWeight: 600, fontSize: 15, color: '#111827' }}>
-            {user?.username || 'Student'}
+            {user?.username || 'Lecturer'}
           </div>
+          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Lecturer</div>
         </div>
 
         {/* New notifications banner */}
         {newCount > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+            background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10,
             padding: '10px 16px', marginBottom: 14,
           }}>
-            <span style={{ fontSize: 13, color: '#1e40af', fontWeight: 600 }}>
+            <span style={{ fontSize: 13, color: '#92400e', fontWeight: 600 }}>
               🔔 {newCount} new notification{newCount > 1 ? 's' : ''} arrived
             </span>
-            <button onClick={dismissNewBanner} style={{
+            <button onClick={() => setNewCount(0)} style={{
               fontSize: 12, padding: '4px 12px', borderRadius: 6,
-              background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer',
+              background: '#d97706', color: '#fff', border: 'none', cursor: 'pointer',
             }}>
               Dismiss
             </button>
@@ -265,9 +248,9 @@ export default function StudentNotifications() {
               <button key={f} onClick={() => setActiveFilter(f)} style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer', transition: 'all 0.15s',
-                background: activeFilter === f ? '#1e40af' : '#f3f4f6',
+                background: activeFilter === f ? '#d97706' : '#f3f4f6',
                 color:      activeFilter === f ? '#fff'    : '#6b7280',
-                border:     activeFilter === f ? '1.5px solid #1e40af' : '1.5px solid #e5e7eb',
+                border:     activeFilter === f ? '1.5px solid #d97706' : '1.5px solid #e5e7eb',
               }}>
                 {f}
                 {count > 0 && (
@@ -319,7 +302,7 @@ export default function StudentNotifications() {
                       <div key={n._id} style={{
                         display: 'flex', alignItems: 'flex-start', gap: 14,
                         padding: '14px 20px',
-                        background: n.read ? '#fff' : '#f0f7ff',
+                        background: n.read ? '#fff' : '#fffbeb',
                         borderBottom: idx < items.length - 1 ? '1px solid #f3f4f6' : 'none',
                         position: 'relative', transition: 'background 0.2s',
                       }}>
@@ -328,7 +311,7 @@ export default function StudentNotifications() {
                           <div style={{
                             position: 'absolute', left: 8, top: '50%',
                             transform: 'translateY(-50%)',
-                            width: 6, height: 6, borderRadius: '50%', background: '#2563eb',
+                            width: 6, height: 6, borderRadius: '50%', background: '#d97706',
                           }} />
                         )}
 
@@ -431,6 +414,6 @@ export default function StudentNotifications() {
         </div>
 
       </div>
-    </StudentLayout>
+    </LecturerLayout>
   );
 }

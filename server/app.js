@@ -29,7 +29,8 @@ app.use('/api/user',          require('./routes/userRoutes'));
 app.use('/api/submissions',   require('./routes/submissionRoutes'));
 app.use('/api/assignments',   require('./routes/assignmentRoutes'));
 app.use('/api/ai',            require('./routes/Airoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes')); // ← NEW
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/subscription',  require('./routes/subscriptionRoutes'));
 
 // ── Health check ────────────────────────────
 app.get('/', (req, res) => res.json({ message: '🚀 Mentora API is running!' }));

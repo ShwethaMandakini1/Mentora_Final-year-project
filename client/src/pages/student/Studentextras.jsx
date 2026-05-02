@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from './StudentLayout';
 import { useAuth } from '../../context/AuthContext';
-import { getProfile, updateProfile, updatePassword } from '../../api/api';
+import { getProfile, updateProfile, updatePassword, getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification, deleteAllNotifications } from '../../api/api';
 import axios from 'axios';
 import './dashboard.css';
 
 // ── Notification type config ──────────────────────────────────────────────────
 const TYPE_CONFIG = {
-  new_assignment:    { icon: '📋', color: '#2563eb', bg: '#eff6ff', label: 'New Assignment'  },
-  marks_received:    { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
-  regrade_accepted:  { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
-  deadline_reminder: { icon: '⏰', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
-  default:           { icon: '🔔', color: '#6b7280', bg: '#f9fafb', label: 'Notification'     },
+  new_assignment:      { icon: '📋', color: '#2563eb', bg: '#eff6ff', label: 'New Assignment'  },
+  marks_received:      { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
+  regrade_accepted:    { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
+  deadline_reminder:   { icon: '⏰', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
+  approval_requested:  { icon: '📤', color: '#d97706', bg: '#fef3c7', label: 'Under Review'    },
+  submission_approved: { icon: '✅', color: '#16a34a', bg: '#dcfce7', label: 'Approved!'        },
+  submission_rejected: { icon: '❌', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
+  default:             { icon: '🔔', color: '#6b7280', bg: '#f9fafb', label: 'Notification'     },
 };
 
 // ── Time formatter ─────────────────────────────────────────────────────────────
@@ -45,7 +48,7 @@ function groupByDate(notifications) {
 }
 
 // ── Filter tabs ────────────────────────────────────────────────────────────────
-const FILTERS = ['All', 'Unread', 'Assignments', 'Marks', 'Deadlines', 'Re-grade'];
+const FILTERS = ['All', 'Unread', 'Assignments', 'Marks', 'Deadlines', 'Re-grade', 'Approvals'];
 const FILTER_MAP = {
   'All':         () => true,
   'Unread':      n => !n.read,
@@ -53,6 +56,7 @@ const FILTER_MAP = {
   'Marks':       n => n.type === 'marks_received',
   'Deadlines':   n => n.type === 'deadline_reminder',
   'Re-grade':    n => n.type === 'regrade_accepted',
+  'Approvals':   n => ['approval_requested', 'submission_approved', 'submission_rejected'].includes(n.type),
 };
 
 const menuItemStyle = {
@@ -62,44 +66,7 @@ const menuItemStyle = {
   borderBottom: '1px solid #f3f4f6',
 };
 
-// ── Mock data — remove once backend /api/notifications is live ─────────────────
-const MOCK_NOTIFICATIONS = [
-  {
-    _id: 'n1', type: 'new_assignment', read: false,
-    title: 'New Assignment Posted',
-    message: 'Lecturer posted a new assignment: HCI Final Report in HCI module.',
-    createdAt: new Date().toISOString(),
-    meta: { assignmentName: 'HCI Final Report', moduleName: 'HCI' },
-  },
-  {
-    _id: 'n2', type: 'marks_received', read: false,
-    title: 'Marks Received',
-    message: 'Your marks for SE Proposal have been released. You scored 82%.',
-    createdAt: new Date().toISOString(),
-    meta: { submissionId: 'sub_2', assignmentName: 'SE Proposal' },
-  },
-  {
-    _id: 'n3', type: 'regrade_accepted', read: false,
-    title: 'Re-grade Request Accepted',
-    message: 'Your re-grade request for AI Research has been accepted. New score: 88%.',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    meta: { submissionId: 'sub_3', assignmentName: 'AI Research' },
-  },
-  {
-    _id: 'n4', type: 'deadline_reminder', read: true,
-    title: 'Deadline Approaching',
-    message: 'AI Project Proposal is due in 3 days. Make sure to submit on time.',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    meta: { assignmentName: 'AI Project Proposal' },
-  },
-  {
-    _id: 'n5', type: 'marks_received', read: true,
-    title: 'Marks Received',
-    message: 'Your marks for DBMS Research have been released. You scored 75%.',
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    meta: { submissionId: 'sub_5', assignmentName: 'DBMS Research' },
-  },
-];
+const POLL_INTERVAL = 30000;
 
 // ── NOTIFICATIONS ──────────────────────────────────────────────────────────────
 export function StudentNotifications() {
@@ -109,17 +76,53 @@ export function StudentNotifications() {
   const [loading, setLoading]             = useState(true);
   const [activeFilter, setActiveFilter]   = useState('All');
   const [menuOpen, setMenuOpen]           = useState(null);
-  const menuRef = useRef(null);
+  const [newCount, setNewCount]           = useState(0);
+  const menuRef   = useRef(null);
+  const pollRef   = useRef(null);
+  const latestIds = useRef(new Set());
+
+  // ── Fetch real notifications from API ─────────────────────────────────────
+  const fetchNotifications = useCallback(async (silent = false) => {
+    try {
+      const res  = await getNotifications();
+      const data = res.data.notifications || [];
+      if (silent) {
+        const incoming = new Set(data.map(n => n._id));
+        const added    = [...incoming].filter(id => !latestIds.current.has(id));
+        if (added.length > 0) {
+          setNewCount(prev => prev + added.length);
+          setNotifications(data);
+          latestIds.current = incoming;
+        }
+      } else {
+        setNotifications(data);
+        latestIds.current = new Set(data.map(n => n._id));
+        setLoading(false);
+      }
+    } catch {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNotifications(false); }, [fetchNotifications]);
 
   useEffect(() => {
-    // ── Replace this block with real API call once backend is ready ──
-    // import { getNotifications } from '../../api/api';
-    // getNotifications().then(r => setNotifications(r.data.notifications || [])).finally(() => setLoading(false));
-    setTimeout(() => {
-      setNotifications(MOCK_NOTIFICATIONS);
-      setLoading(false);
-    }, 400);
-  }, []);
+    pollRef.current = setInterval(() => fetchNotifications(true), POLL_INTERVAL);
+    return () => clearInterval(pollRef.current);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        clearInterval(pollRef.current);
+      } else {
+        fetchNotifications(true);
+        pollRef.current = setInterval(() => fetchNotifications(true), POLL_INTERVAL);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchNotifications]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -133,40 +136,48 @@ export function StudentNotifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // ── Actions ───────────────────────────────────────────────────────────────────
-  const markRead = (id) => {
+  const markRead = async (id) => {
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
     setMenuOpen(null);
-    // Real: axios.put(`/api/notifications/${id}/read`)
+    await markNotificationRead(id).catch(() => {});
   };
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    // Real: axios.put('/api/notifications/read-all')
+    await markAllNotificationsRead().catch(() => {});
   };
 
-  const deleteOne = (id) => {
-    setNotifications(prev => prev.filter(n => n._id !== id));
+  const deleteOne = async (id) => {
+    setNotifications(prev => {
+      const updated = prev.filter(n => n._id !== id);
+      latestIds.current = new Set(updated.map(n => n._id));
+      return updated;
+    });
     setMenuOpen(null);
-    // Real: axios.delete(`/api/notifications/${id}`)
+    await deleteNotification(id).catch(() => {});
   };
 
-  const deleteAll = () => {
+  const deleteAll = async () => {
     setNotifications([]);
-    // Real: axios.delete('/api/notifications/all')
+    latestIds.current = new Set();
+    await deleteAllNotifications().catch(() => {});
   };
 
   // ── Navigate on View ──────────────────────────────────────────────────────────
-  const handleView = (n) => {
-    markRead(n._id);
+  const handleView = async (n) => {
+    await markRead(n._id);
     if (n.type === 'marks_received' || n.type === 'regrade_accepted') {
       navigate('/student/reports');
     } else if (n.type === 'new_assignment' || n.type === 'deadline_reminder') {
       navigate('/student/submissions');
+    } else if (n.type === 'submission_approved' || n.type === 'submission_rejected') {
+      navigate('/student/submissions', { state: { tab: 'pre-approval' } });
     }
   };
 
   const isViewable = (n) =>
-    ['marks_received', 'regrade_accepted', 'new_assignment', 'deadline_reminder'].includes(n.type);
+    ['marks_received', 'regrade_accepted', 'new_assignment', 'deadline_reminder',
+     'submission_approved', 'submission_rejected'].includes(n.type);
 
   const filtered = notifications.filter(FILTER_MAP[activeFilter] || (() => true));
   const grouped  = groupByDate(filtered);
@@ -215,6 +226,25 @@ export function StudentNotifications() {
           </div>
         </div>
 
+        {/* New notifications banner */}
+        {newCount > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+            padding: '10px 16px', marginBottom: 14,
+          }}>
+            <span style={{ fontSize: 13, color: '#1e40af', fontWeight: 600 }}>
+              🔔 {newCount} new notification{newCount > 1 ? 's' : ''} arrived
+            </span>
+            <button onClick={() => setNewCount(0)} style={{
+              fontSize: 12, padding: '4px 12px', borderRadius: 6,
+              background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer',
+            }}>
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           {FILTERS.map(f => {
@@ -245,6 +275,7 @@ export function StudentNotifications() {
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {loading ? (
             <div style={{ padding: '48px 0', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
+              <div style={{ marginBottom: 8, fontSize: 20 }}>⏳</div>
               Loading notifications...
             </div>
           ) : filtered.length === 0 ? (
@@ -280,7 +311,6 @@ export function StudentNotifications() {
                         position: 'relative',
                       }}>
 
-                        {/* Unread dot */}
                         {!n.read && (
                           <div style={{
                             position: 'absolute', left: 8, top: '50%',
@@ -289,7 +319,6 @@ export function StudentNotifications() {
                           }} />
                         )}
 
-                        {/* Icon */}
                         <div style={{
                           width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                           background: cfg.bg, display: 'flex', alignItems: 'center',
@@ -298,7 +327,6 @@ export function StudentNotifications() {
                           {cfg.icon}
                         </div>
 
-                        {/* Content */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                             <span style={{
@@ -316,7 +344,6 @@ export function StudentNotifications() {
                             {n.message}
                           </div>
 
-                          {/* Inline action buttons */}
                           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                             {isViewable(n) && (
                               <button onClick={() => handleView(n)} style={{
@@ -339,7 +366,6 @@ export function StudentNotifications() {
                           </div>
                         </div>
 
-                        {/* ··· dropdown */}
                         <div style={{ position: 'relative' }}
                           ref={menuOpen === n._id ? menuRef : null}>
                           <button onClick={() => setMenuOpen(menuOpen === n._id ? null : n._id)}
@@ -383,6 +409,11 @@ export function StudentNotifications() {
             })
           )}
         </div>
+
+        <div style={{ textAlign: 'center', marginTop: 12, fontSize: 11, color: '#d1d5db' }}>
+          Auto-refreshes every 30 seconds
+        </div>
+
       </div>
     </StudentLayout>
   );
