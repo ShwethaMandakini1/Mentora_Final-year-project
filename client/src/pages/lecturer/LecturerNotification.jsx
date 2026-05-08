@@ -177,13 +177,13 @@ export default function LecturerNotifications() {
   return (
     <LecturerLayout>
 
-      <div className="topbar">
-        <div className="topbar-left">
-          <h1>Notifications</h1>
-          <p>{unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}</p>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Notifications</h1>
+          <p className="ios-page-date">{unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}</p>
         </div>
         {notifications.length > 0 && (
-          <div className="topbar-right" style={{ gap: 10 }}>
+          <div className="ios-topbar-right">
             {unreadCount > 0 && (
               <button className="btn-outline" style={{ fontSize: 12, padding: '6px 14px' }} onClick={markAllRead}>
                 ✓ Mark all read
@@ -191,8 +191,8 @@ export default function LecturerNotifications() {
             )}
             <button onClick={deleteAll} style={{
               fontSize: 12, padding: '6px 14px', background: 'none',
-              border: '1.5px solid #fecaca', borderRadius: 8,
-              color: '#dc2626', cursor: 'pointer', fontWeight: 600,
+              border: '1.5px solid rgba(220,38,38,0.35)', borderRadius: 8,
+              color: '#dc2626', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit',
             }}>
               🗑 Clear all
             </button>
@@ -203,34 +203,35 @@ export default function LecturerNotifications() {
       <div className="page-content">
 
         {/* Profile banner */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 12px' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#fef3c7',
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--sky), var(--cyan))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 26, fontWeight: 700, color: '#92400e', marginBottom: 8,
-            border: '3px solid #fde68a',
+            fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: 8,
+            boxShadow: '0 4px 14px rgba(0,150,199,0.30)',
           }}>
             {user?.username?.[0]?.toUpperCase() || 'L'}
           </div>
-          <div style={{ fontWeight: 600, fontSize: 15, color: '#111827' }}>
+          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>
             {user?.username || 'Lecturer'}
           </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Lecturer</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Lecturer</div>
         </div>
 
         {/* New notifications banner */}
         {newCount > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10,
-            padding: '10px 16px', marginBottom: 14,
+            background: 'var(--foam)', border: '1px solid var(--light-cyan)', borderRadius: 12,
+            padding: '10px 16px', marginBottom: 4,
           }}>
-            <span style={{ fontSize: 13, color: '#92400e', fontWeight: 600 }}>
+            <span style={{ fontSize: 13, color: 'var(--ocean)', fontWeight: 600 }}>
               🔔 {newCount} new notification{newCount > 1 ? 's' : ''} arrived
             </span>
             <button onClick={() => setNewCount(0)} style={{
               fontSize: 12, padding: '4px 12px', borderRadius: 6,
-              background: '#d97706', color: '#fff', border: 'none', cursor: 'pointer',
+              background: 'var(--sky)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Dismiss
             </button>
@@ -238,7 +239,7 @@ export default function LecturerNotifications() {
         )}
 
         {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {FILTERS.map(f => {
             const count =
               f === 'Unread' ? unreadCount :
@@ -247,17 +248,17 @@ export default function LecturerNotifications() {
             return (
               <button key={f} onClick={() => setActiveFilter(f)} style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.15s',
-                background: activeFilter === f ? '#d97706' : '#f3f4f6',
-                color:      activeFilter === f ? '#fff'    : '#6b7280',
-                border:     activeFilter === f ? '1.5px solid #d97706' : '1.5px solid #e5e7eb',
+                cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                background: activeFilter === f ? 'var(--sky)' : 'var(--foam)',
+                color:      activeFilter === f ? '#fff'        : 'var(--ocean)',
+                border:     activeFilter === f ? '1.5px solid var(--sky)' : '1.5px solid var(--border)',
               }}>
                 {f}
                 {count > 0 && (
                   <span style={{
                     marginLeft: 4, borderRadius: 10, padding: '1px 6px', fontSize: 10,
-                    background: activeFilter === f ? 'rgba(255,255,255,0.3)' : '#e5e7eb',
-                    color:      activeFilter === f ? '#fff' : '#374151',
+                    background: activeFilter === f ? 'rgba(255,255,255,0.3)' : 'rgba(0,150,199,0.12)',
+                    color:      activeFilter === f ? '#fff' : 'var(--sky)',
                   }}>
                     {count}
                   </span>
@@ -270,15 +271,15 @@ export default function LecturerNotifications() {
         {/* Notification list */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ padding: '48px 0', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
-              <div style={{ marginBottom: 8, fontSize: 20 }}>⏳</div>
-              Loading notifications...
+            <div className="ios-loading-state">
+              <div className="ios-spinner" />
+              <p>Loading notifications…</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding: '56px 0', textAlign: 'center', color: '#9ca3af' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔔</div>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>No notifications here</div>
-              <div style={{ fontSize: 13, marginTop: 4 }}>
+            <div className="ios-empty-state" style={{ padding: '56px 20px' }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🔔</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>No notifications here</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {activeFilter !== 'All' ? `No ${activeFilter.toLowerCase()} notifications.` : "You're all caught up!"}
               </div>
             </div>
@@ -288,10 +289,10 @@ export default function LecturerNotifications() {
               return (
                 <div key={group}>
                   <div style={{
-                    padding: '10px 20px', fontSize: 11, fontWeight: 700,
-                    color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em',
-                    background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
-                    borderTop: '1px solid #f3f4f6',
+                    padding: '10px 20px', fontSize: 10, fontWeight: 700,
+                    color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px',
+                    background: 'rgba(0,119,182,0.03)', borderBottom: '1px solid var(--border-soft)',
+                    borderTop: '1px solid var(--border-soft)',
                   }}>
                     {group}
                   </div>
@@ -302,8 +303,8 @@ export default function LecturerNotifications() {
                       <div key={n._id} style={{
                         display: 'flex', alignItems: 'flex-start', gap: 14,
                         padding: '14px 20px',
-                        background: n.read ? '#fff' : '#fffbeb',
-                        borderBottom: idx < items.length - 1 ? '1px solid #f3f4f6' : 'none',
+                        background: n.read ? '#fff' : 'rgba(0,150,199,0.04)',
+                        borderBottom: idx < items.length - 1 ? '1px solid var(--border-soft)' : 'none',
                         position: 'relative', transition: 'background 0.2s',
                       }}>
 
@@ -311,7 +312,7 @@ export default function LecturerNotifications() {
                           <div style={{
                             position: 'absolute', left: 8, top: '50%',
                             transform: 'translateY(-50%)',
-                            width: 6, height: 6, borderRadius: '50%', background: '#d97706',
+                            width: 6, height: 6, borderRadius: '50%', background: 'var(--sky)',
                           }} />
                         )}
 
@@ -331,12 +332,12 @@ export default function LecturerNotifications() {
                             }}>
                               {cfg.label}
                             </span>
-                            <span style={{ fontSize: 11, color: '#9ca3af' }}>{timeAgo(n.createdAt)}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(n.createdAt)}</span>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: n.read ? 400 : 600, color: '#111827', marginBottom: 2 }}>
+                          <div style={{ fontSize: 13, fontWeight: n.read ? 400 : 600, color: 'var(--navy)', marginBottom: 2 }}>
                             {n.title}
                           </div>
-                          <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                             {n.message}
                           </div>
 
@@ -344,8 +345,8 @@ export default function LecturerNotifications() {
                             {isViewable(n) && (
                               <button onClick={() => handleView(n)} style={{
                                 fontSize: 11, fontWeight: 600, padding: '4px 12px',
-                                background: cfg.color, color: '#fff',
-                                border: 'none', borderRadius: 6, cursor: 'pointer',
+                                background: 'var(--sky)', color: '#fff',
+                                border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit',
                               }}>
                                 View →
                               </button>
@@ -353,8 +354,8 @@ export default function LecturerNotifications() {
                             {!n.read && (
                               <button onClick={() => markRead(n._id)} style={{
                                 fontSize: 11, fontWeight: 600, padding: '4px 12px',
-                                background: 'none', color: '#6b7280',
-                                border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer',
+                                background: 'none', color: 'var(--text-muted)',
+                                border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit',
                               }}>
                                 Mark read
                               </button>
@@ -367,7 +368,7 @@ export default function LecturerNotifications() {
                             onClick={() => setMenuOpen(menuOpen === n._id ? null : n._id)}
                             style={{
                               background: 'none', border: 'none', cursor: 'pointer',
-                              fontSize: 18, color: '#9ca3af', padding: '4px 6px',
+                              fontSize: 18, color: 'var(--text-muted)', padding: '4px 6px',
                               borderRadius: 6, lineHeight: 1,
                             }}
                           >
@@ -376,8 +377,8 @@ export default function LecturerNotifications() {
                           {menuOpen === n._id && (
                             <div style={{
                               position: 'absolute', right: 0, top: 28, zIndex: 50,
-                              background: '#fff', border: '1px solid #e5e7eb',
-                              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                              background: '#fff', border: '1px solid var(--border)',
+                              borderRadius: 8, boxShadow: 'var(--shadow-card)',
                               minWidth: 150, overflow: 'hidden',
                             }}>
                               {!n.read && (
@@ -409,7 +410,7 @@ export default function LecturerNotifications() {
           )}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 12, fontSize: 11, color: '#d1d5db' }}>
+        <div style={{ textAlign: 'center', marginTop: 4, fontSize: 11, color: 'var(--text-muted)' }}>
           Auto-refreshes every 30 seconds
         </div>
 

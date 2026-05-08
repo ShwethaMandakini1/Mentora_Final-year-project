@@ -795,22 +795,22 @@ export default function LecturerSubmissions() {
 
   return (
     <LecturerLayout>
-      <div className="topbar">
-        <div className="topbar-left">
-          <h1>Submissions</h1>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Submissions</h1>
         </div>
       </div>
 
       <div className="page-content">
-        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: 24, gap: 4 }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24, gap: 4 }}>
           {[['view', 'View Submissions'], ['upload', 'Upload Assignments']].map(([key, label]) => (
             <button key={key} onClick={() => setActiveTab(key)} style={{
               padding: '10px 24px', cursor: 'pointer', fontSize: 14,
               fontWeight: activeTab === key ? 600 : 400,
-              color: activeTab === key ? '#2563eb' : '#6b7280',
-              borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
+              color: activeTab === key ? 'var(--sky)' : 'var(--text-muted)',
+              borderBottom: activeTab === key ? '2px solid var(--sky)' : '2px solid transparent',
               background: 'none', border: 'none', outline: 'none',
-              marginBottom: -2, transition: 'all 0.2s',
+              marginBottom: -2, transition: 'all 0.2s', fontFamily: 'inherit',
             }}>{label}</button>
           ))}
         </div>

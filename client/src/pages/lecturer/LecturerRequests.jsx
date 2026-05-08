@@ -61,13 +61,17 @@ export default function LecturerRequests() {
     const ss = statusStyle(selected.approvalStatus);
     return (
       <LecturerLayout>
-        <div style={{ padding: '30px 40px' }}>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Assignment Requests</h1>
           <button onClick={() => { setSelected(null); setMsg(''); setFeedback(''); }}
             style={{ background: 'none', border: 'none', color: '#3b82f6',
-                     fontSize: 14, cursor: 'pointer', marginBottom: 20 }}>
+                     fontSize: 14, cursor: 'pointer', marginTop: 8 }}>
             ← Back to Requests
           </button>
-
+        </div>
+      </div>
+      <div className="page-content">
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
@@ -241,11 +245,13 @@ export default function LecturerRequests() {
   // ── List View ──────────────────────────────────────────────────────────────
   return (
     <LecturerLayout>
-      <div style={{ padding: '30px 40px' }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Assignment Requests</h2>
-        <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 24 }}>
-          Review student submissions before they are officially submitted to Mentora
-        </p>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Assignment Requests</h1>
+          <p className="ios-page-date">Review student submissions before they are officially submitted to Mentora</p>
+        </div>
+      </div>
+      <div className="page-content">
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
@@ -359,7 +365,6 @@ export default function LecturerRequests() {
               </tbody>
             </table>
           )}
-        </div>
       </div>
     </LecturerLayout>
   );

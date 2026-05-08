@@ -559,10 +559,10 @@ export default function LecturerMarking() {
 
   return (
     <LecturerLayout>
-      <div className="topbar">
-        <div className="topbar-left">
-          <h1>Marking & Feedback</h1>
-          <p>Manually mark submissions, review AI analysis, then decide final scores</p>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Marking &amp; Feedback</h1>
+          <p className="ios-page-date">Manually mark submissions, review AI analysis, then decide final scores</p>
         </div>
       </div>
 
@@ -676,14 +676,14 @@ export default function LecturerMarking() {
             {/* ══ RIGHT PANEL ══ */}
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
-              <div style={{ display:'flex', borderBottom:'2px solid #e5e7eb', gap:2 }}>
+              <div style={{ display:'flex', borderBottom:'2px solid var(--border)', gap:2 }}>
                 {TABS.map(({ key, label }) => (
                   <button key={key} onClick={() => setActiveTab(key)} style={{
                     padding:'10px 18px', cursor:'pointer', fontSize:13,
                     fontWeight: activeTab === key ? 700 : 400,
-                    color:      activeTab === key ? '#2563eb' : '#6b7280',
+                    color:      activeTab === key ? 'var(--sky)' : 'var(--text-muted)',
                     borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-                    borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
+                    borderBottom: activeTab === key ? '2px solid var(--sky)' : '2px solid transparent',
                     background:'none', outline:'none',
                     marginBottom:-2, transition:'all 0.15s', whiteSpace:'nowrap', fontFamily:'inherit',
                   }}>{label}</button>
