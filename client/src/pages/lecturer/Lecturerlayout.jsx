@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-
-// Mocked context and API to resolve compilation issues in the environment
-const useAuth = () => ({
-  user: { name: 'Lecturer' },
-  logout: () => {
-    console.log('Logged out');
-  }
-});
-
-const getNotifications = async () => {
-  return { data: { notifications: [] } };
-};
+import { useAuth } from '../../context/AuthContext';
+import { getNotifications } from '../../api/api';
+import './sidebar.css';
 
 export default function LecturerLayout({ children }) {
   const navigate = useNavigate();
