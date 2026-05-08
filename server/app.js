@@ -17,7 +17,13 @@ app.use('/submissions', express.static(path.join(__dirname, 'submissions')));
 
 // ── MongoDB ─────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected!'))
+  .then(() => {
+    console.log('✅ MongoDB Connected!');
+
+    // ── Start deadline reminder service AFTER DB connects ──
+    const { startDeadlineReminders } = require('./services/deadlineReminderService');
+    startDeadlineReminders();
+  })
   .catch(err => {
     console.error('❌ MongoDB Connection Error:', err.message);
     process.exit(1);
@@ -31,12 +37,23 @@ app.use('/api/assignments',   require('./routes/assignmentRoutes'));
 app.use('/api/ai',            require('./routes/Airoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/subscription',  require('./routes/subscriptionRoutes'));
+app.use('/api/leaderboard',   require('./routes/leaderboardRoutes'));
 
 // ── Health check ────────────────────────────
 app.get('/', (req, res) => res.json({ message: '🚀 Mentora API is running!' }));
 
-// ── ONE-TIME FIX: normalize old absolute filePaths in DB ────────────────────
-// Visit http://localhost:5000/fix-paths ONCE, then DELETE this route
+// ── Manual trigger for deadline check (for testing) ──────────────────────────
+app.get('/api/check-deadlines', async (req, res) => {
+  try {
+    const { checkDeadlines } = require('./services/deadlineReminderService');
+    await checkDeadlines();
+    res.json({ success: true, message: 'Deadline check completed!' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── ONE-TIME FIX ─────────────────────────────
 app.get('/fix-paths', async (req, res) => {
   const Submission = require('./models/Submission');
   const submissions = await Submission.find({});
@@ -51,7 +68,6 @@ app.get('/fix-paths', async (req, res) => {
   }
   res.json({ message: `✅ Fixed ${fixed} records` });
 });
-// ── END ONE-TIME FIX ─────────────────────────
 
 // ── 404 ─────────────────────────────────────
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));

@@ -15,6 +15,7 @@ import StudentSubmissions  from './pages/student/StudentSubmissions';
 import StudentReports      from './pages/student/Studentreports';
 import StudentAnalytics    from './pages/student/Studentanalytics';
 import StudentSubscription from './pages/student/StudentSubscription';
+import StudentLeaderboard  from './pages/student/StudentLeaderboard';
 import { StudentNotifications, StudentProfile } from './pages/student/Studentextras';
 
 import LecturerDashboard     from './pages/lecturer/Lecturerdashboard';
@@ -64,6 +65,7 @@ function AppRoutes() {
       <Route path="/student/reports"       element={<ProtectedRoute role="student"><StudentReports /></ProtectedRoute>} />
       <Route path="/student/analytics"     element={<ProtectedRoute role="student"><StudentAnalytics /></ProtectedRoute>} />
       <Route path="/student/subscription"  element={<ProtectedRoute role="student"><StudentSubscription /></ProtectedRoute>} />
+      <Route path="/student/leaderboard"   element={<ProtectedRoute role="student"><StudentLeaderboard /></ProtectedRoute>} />
       <Route path="/student/notifications" element={<ProtectedRoute role="student"><StudentNotifications /></ProtectedRoute>} />
       <Route path="/student/profile"       element={<ProtectedRoute role="student"><StudentProfile /></ProtectedRoute>} />
 

@@ -11,7 +11,6 @@ export default function StudentLayout({ children }) {
   const path       = location.pathname;
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Poll for unread notifications every 30s
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -26,11 +25,12 @@ export default function StudentLayout({ children }) {
   }, []);
 
   const navItems = [
-    { label: 'Dashboard',     route: '/student/dashboard'     },
-    { label: 'Submissions',   route: '/student/submissions'   },
-    { label: 'Reports',       route: '/student/reports'       },
-    { label: 'Analytics',     route: '/student/analytics'     },
-    { label: 'Subscription',  route: '/student/subscription'  },
+    { label: 'Dashboard',    route: '/student/dashboard'    },
+    { label: 'Submissions',  route: '/student/submissions'  },
+    { label: 'Reports',      route: '/student/reports'      },
+    { label: 'Analytics',    route: '/student/analytics'    },
+    { label: 'Leaderboard',  route: '/student/leaderboard'  },
+    { label: 'Subscription', route: '/student/subscription' },
   ];
 
   const icons = {
@@ -60,6 +60,11 @@ export default function StudentLayout({ children }) {
         <line x1="6"  y1="20" x2="6"  y2="14"/>
       </svg>
     ),
+    Leaderboard: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 21V7l4-4 4 4v14"/><path d="M3 21h18"/><path d="M10 21v-5h4v5"/>
+      </svg>
+    ),
     Subscription: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -81,25 +86,16 @@ export default function StudentLayout({ children }) {
 
   return (
     <div className="dash-layout">
-
-      {/* SIDEBAR */}
       <div style={sidebarStyle}>
 
         {/* Brand */}
-        <div
-          onClick={() => navigate('/student/dashboard')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 2,
-            padding: '22px 16px 18px 3px',
-            cursor: 'pointer',
-            borderBottom: '1px solid rgba(255,255,255,0.12)',
-            marginBottom: 8,
-          }}>
-          <img
-            src="/assets/Mentora.png"
-            alt="Mentora"
-            style={{ width: 90, height: 70, objectFit: 'cover', flexShrink: 0 }}
-          />
+        <div onClick={() => navigate('/student/dashboard')} style={{
+          display: 'flex', alignItems: 'center', gap: 2,
+          padding: '22px 16px 18px 3px', cursor: 'pointer',
+          borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: 8,
+        }}>
+          <img src="/assets/Mentora.png" alt="Mentora"
+            style={{ width: 90, height: 70, objectFit: 'cover', flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: 0.4, lineHeight: 1.2 }}>
               Mentora
@@ -115,27 +111,21 @@ export default function StudentLayout({ children }) {
           {navItems.map(n => {
             const active = path.startsWith(n.route);
             return (
-              <div
-                key={n.route}
-                onClick={() => navigate(n.route)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-                  fontSize: 14, fontWeight: active ? 600 : 400,
-                  color: active ? '#fff' : 'rgba(255,255,255,0.62)',
-                  background: active ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-                  boxShadow: active ? '0 4px 12px rgba(37,99,235,0.35)' : 'none',
-                  transition: 'all 0.18s ease',
-                  justifyContent: 'space-between',
-                }}
+              <div key={n.route} onClick={() => navigate(n.route)} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
+                fontSize: 14, fontWeight: active ? 600 : 400,
+                color: active ? '#fff' : 'rgba(255,255,255,0.62)',
+                background: active ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
+                boxShadow: active ? '0 4px 12px rgba(37,99,235,0.35)' : 'none',
+                transition: 'all 0.18s ease',
+              }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: active ? '#fff' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
-                    {icons[n.label]}
-                  </span>
-                  {n.label}
+                <span style={{ color: active ? '#fff' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
+                  {icons[n.label]}
                 </span>
+                {n.label}
               </div>
             );
           })}
@@ -143,21 +133,17 @@ export default function StudentLayout({ children }) {
 
         {/* Bottom */}
         <div style={{
-          padding: '10px',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
+          padding: '10px', borderTop: '1px solid rgba(255,255,255,0.1)',
           display: 'flex', flexDirection: 'column', gap: 2,
         }}>
-
           {/* Notifications */}
-          <div
-            onClick={() => navigate('/student/notifications')}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-              fontSize: 14, transition: 'all 0.18s ease',
-              color: path === '/student/notifications' ? '#fff' : 'rgba(255,255,255,0.62)',
-              background: path === '/student/notifications' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-            }}
+          <div onClick={() => navigate('/student/notifications')} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 14,
+            transition: 'all 0.18s ease',
+            color: path === '/student/notifications' ? '#fff' : 'rgba(255,255,255,0.62)',
+            background: path === '/student/notifications' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
+          }}
             onMouseEnter={e => { if (path !== '/student/notifications') e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
             onMouseLeave={e => { if (path !== '/student/notifications') e.currentTarget.style.background = 'transparent'; }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -175,15 +161,13 @@ export default function StudentLayout({ children }) {
           </div>
 
           {/* Profile */}
-          <div
-            onClick={() => navigate('/student/profile')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-              fontSize: 14, transition: 'all 0.18s ease',
-              color: path === '/student/profile' ? '#fff' : 'rgba(255,255,255,0.62)',
-              background: path === '/student/profile' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-            }}
+          <div onClick={() => navigate('/student/profile')} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 14,
+            transition: 'all 0.18s ease',
+            color: path === '/student/profile' ? '#fff' : 'rgba(255,255,255,0.62)',
+            background: path === '/student/profile' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
+          }}
             onMouseEnter={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
             onMouseLeave={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'transparent'; }}>
             <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
@@ -196,14 +180,11 @@ export default function StudentLayout({ children }) {
           </div>
 
           {/* Logout */}
-          <div
-            onClick={() => { logout(); window.location.href = '/signin?role=student'; }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-              fontSize: 14, color: 'rgba(255,255,255,0.62)',
-              transition: 'all 0.18s ease',
-            }}
+          <div onClick={() => { logout(); window.location.href = '/signin?role=student'; }} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
+            fontSize: 14, color: 'rgba(255,255,255,0.62)', transition: 'all 0.18s ease',
+          }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#fca5a5'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.62)'; }}>
             <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
@@ -216,14 +197,12 @@ export default function StudentLayout({ children }) {
             Log out
           </div>
         </div>
-
       </div>
 
       {/* MAIN */}
       <div style={{ marginLeft: 220, minHeight: '100vh', background: '#f5f6fa', flex: 1 }}>
         {children}
       </div>
-
     </div>
   );
 }
