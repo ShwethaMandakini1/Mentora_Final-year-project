@@ -119,11 +119,8 @@ export function LecturerProfile() {
 
   return (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left">
-          <h1 className="ios-page-title">Profile</h1>
-          <p className="ios-page-date">Manage your account settings</p>
-        </div>
+      <div className="topbar">
+        <div className="topbar-left"><h1>Profile</h1><p>Manage your account settings</p></div>
       </div>
       <div className="page-content">
         <div className="profile-wrap">

@@ -25,9 +25,7 @@ export default function LecturerReports() {
 
   if (selected) return (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left"><h1 className="ios-page-title">Reports</h1></div>
-      </div>
+      <div className="topbar"><div className="topbar-left"><h1>Reports</h1></div></div>
       <div className="page-content">
         <button className="back-btn" onClick={()=>setSelected(null)}>← Back</button>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px'}}>
@@ -65,12 +63,7 @@ export default function LecturerReports() {
 
   return (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left">
-          <h1 className="ios-page-title">Reports</h1>
-          <p className="ios-page-date">Grading summary and feedback records</p>
-        </div>
-      </div>
+      <div className="topbar"><div className="topbar-left"><h1>Reports</h1><p>Grading summary and feedback records</p></div></div>
       <div className="page-content">
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px',marginBottom:'20px'}}>
           {[

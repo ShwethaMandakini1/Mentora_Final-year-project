@@ -34,17 +34,20 @@ export default function LecturerReports() {
   // ── Loading spinner ────────────────────────────────────────────────────────
   const LoadingScreen = () => (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left">
-          <h1 className="ios-page-title">Reports</h1>
-          <p className="ios-page-date">Grading summary and feedback records</p>
-        </div>
+      <div className="topbar">
+        <div className="topbar-left"><h1>Reports</h1><p>Grading summary and feedback records</p></div>
       </div>
       <div className="page-content">
-        <div className="ios-loading-state">
-          <div className="ios-spinner" />
-          <p>Loading reports…</p>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'80px 0', gap:16 }}>
+          <div style={{
+            width: 40, height: 40, border: '4px solid #e5e7eb',
+            borderTop: '4px solid #2563eb', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <div style={{ color:'#9ca3af', fontSize:13 }}>Loading reports...</div>
         </div>
+        {/* Inline keyframe for the spinner */}
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </LecturerLayout>
   );
@@ -55,9 +58,7 @@ export default function LecturerReports() {
   // ── Detail view ────────────────────────────────────────────────────────────
   if (selected) return (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left"><h1 className="ios-page-title">Reports</h1></div>
-      </div>
+      <div className="topbar"><div className="topbar-left"><h1>Reports</h1></div></div>
       <div className="page-content">
         <button className="back-btn" onClick={() => setSelected(null)}>← Back</button>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
@@ -98,11 +99,8 @@ export default function LecturerReports() {
   // ── Main list view ─────────────────────────────────────────────────────────
   return (
     <LecturerLayout>
-      <div className="ios-topbar">
-        <div className="ios-topbar-left">
-          <h1 className="ios-page-title">Reports</h1>
-          <p className="ios-page-date">Grading summary and feedback records</p>
-        </div>
+      <div className="topbar">
+        <div className="topbar-left"><h1>Reports</h1><p>Grading summary and feedback records</p></div>
       </div>
       <div className="page-content">
 
