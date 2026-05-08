@@ -27,6 +27,15 @@ import LecturerMarking       from './pages/lecturer/Lecturermarking';
 import LecturerNotifications from './pages/lecturer/LecturerNotification';
 import { LecturerProfile }   from './pages/lecturer/Lecturerextras';
 
+// ─── Admin imports ────────────────────────────────────────────────────────────
+import AdminLogin         from './pages/admin/AdminLogin';
+import AdminDashboard     from './pages/admin/AdminDashboard';
+import AdminUsers         from './pages/admin/AdminUsers';
+import AdminLecturers     from './pages/admin/AdminLecturers';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminManagement    from './pages/admin/AdminManagement';
+
+// ─── Protected Route (students & lecturers) ───────────────────────────────────
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
 
@@ -44,6 +53,13 @@ function ProtectedRoute({ children, role }) {
   if (role && user.role !== role)
     return <Navigate to={user.role === 'student' ? '/student/dashboard' : '/lecturer/dashboard'} replace />;
 
+  return children;
+}
+
+// ─── Admin Protected Route ────────────────────────────────────────────────────
+function AdminRoute({ children }) {
+  const token = localStorage.getItem('adminToken');
+  if (!token) return <Navigate to="/admin" replace />;
   return children;
 }
 
@@ -78,6 +94,14 @@ function AppRoutes() {
       <Route path="/lecturer/marking"       element={<ProtectedRoute role="lecturer"><LecturerMarking /></ProtectedRoute>} />
       <Route path="/lecturer/notifications" element={<ProtectedRoute role="lecturer"><LecturerNotifications /></ProtectedRoute>} />
       <Route path="/lecturer/profile"       element={<ProtectedRoute role="lecturer"><LecturerProfile /></ProtectedRoute>} />
+
+      {/* ─── Admin (completely separate, hidden from students/lecturers) ─── */}
+      <Route path="/admin"                  element={<AdminLogin />} />
+      <Route path="/admin/dashboard"        element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/users"            element={<AdminRoute><AdminUsers /></AdminRoute>} />
+      <Route path="/admin/lecturers"        element={<AdminRoute><AdminLecturers /></AdminRoute>} />
+      <Route path="/admin/subscriptions"    element={<AdminRoute><AdminSubscriptions /></AdminRoute>} />
+      <Route path="/admin/admins"           element={<AdminRoute><AdminManagement /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
