@@ -1,4 +1,5 @@
 const User          = require('../models/User');
+const Admin         = require('../models/Admin');
 const generateToken = require('../utils/generatetoken');
 const nodemailer    = require('nodemailer');
 
@@ -29,22 +30,42 @@ exports.register = async (req, res, next) => {
 // ── LOGIN ─────────────────────────────────────
 exports.login = async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ success:false, message:'Username and password are required' });
     }
-    const user = await User.findOne({ username });
-    if (!user) return res.status(401).json({ success:false, message:'Invalid credentials' });
-    if (role && user.role !== role) {
-      return res.status(401).json({ success:false, message:`No ${role} account found with this username` });
+
+    // 1. Try finding in User collection (Students/Lecturers)
+    let user = await User.findOne({ username });
+    let role = '';
+
+    if (user) {
+      const match = await user.matchPassword(password);
+      if (!match) return res.status(401).json({ success:false, message:'Invalid credentials' });
+      role = user.role;
+    } else {
+      // 2. Try finding in Admin collection
+      const admin = await Admin.findOne({ username });
+      if (!admin) return res.status(401).json({ success:false, message:'Invalid credentials' });
+
+      const match = await admin.comparePassword(password);
+      if (!match) return res.status(401).json({ success:false, message:'Invalid credentials' });
+      
+      user = admin;
+      role = 'admin';
     }
-    const match = await user.matchPassword(password);
-    if (!match) return res.status(401).json({ success:false, message:'Invalid credentials' });
-    const token = generateToken(user._id, user.role);
+
+    const token = generateToken(user._id, role);
     res.json({
       success: true,
       token,
-      user: { _id:user._id, username:user.username, email:user.email, role:user.role },
+      user: { 
+        _id:      user._id, 
+        username: user.username, 
+        email:    user.email, 
+        role:     role,
+        name:     user.name || user.username 
+      },
     });
   } catch (err) {
     res.status(500).json({ success:false, message: err.message });

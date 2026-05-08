@@ -10,7 +10,7 @@ module.exports = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.type !== 'admin')
+    if (decoded.role !== 'admin')
       return res.status(401).json({ message: 'Invalid admin token' });
 
     const admin = await Admin.findById(decoded.id).select('-password');

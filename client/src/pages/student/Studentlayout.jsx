@@ -8,54 +8,54 @@ const Icon = ({ name, size = 18 }) => {
   const icons = {
     dashboard: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     ),
     submissions: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
       </svg>
     ),
     reports: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     ),
     analytics: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
     leaderboard: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 21V7l4-4 4 4v14"/><path d="M3 21h18"/><path d="M10 21v-5h4v5"/>
+        <path d="M8 21V7l4-4 4 4v14" /><path d="M3 21h18" /><path d="M10 21v-5h4v5" />
       </svg>
     ),
     subscription: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
       </svg>
     ),
     bell: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
     profile: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
       </svg>
     ),
     logout: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
       </svg>
     ),
   };
@@ -63,19 +63,19 @@ const Icon = ({ name, size = 18 }) => {
 };
 
 export default function StudentLayout({ children }) {
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
-  const path       = location.pathname;
+  const path = location.pathname;
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res   = await getNotifications();
+        const res = await getNotifications();
         const count = (res.data.notifications || []).filter(n => !n.read).length;
         setUnreadCount(count);
-      } catch {}
+      } catch { }
     };
     fetch();
     const interval = setInterval(fetch, 30000);
@@ -83,11 +83,11 @@ export default function StudentLayout({ children }) {
   }, []);
 
   const navItems = [
-    { label: 'Dashboard',    route: '/student/dashboard',    icon: 'dashboard'    },
-    { label: 'Submissions',  route: '/student/submissions',  icon: 'submissions'  },
-    { label: 'Reports',      route: '/student/reports',      icon: 'reports'      },
-    { label: 'Analytics',    route: '/student/analytics',    icon: 'analytics'    },
-    { label: 'Leaderboard',  route: '/student/leaderboard',  icon: 'leaderboard'  },
+    { label: 'Dashboard', route: '/student/dashboard', icon: 'dashboard' },
+    { label: 'Submissions', route: '/student/submissions', icon: 'submissions' },
+    { label: 'Reports', route: '/student/reports', icon: 'reports' },
+    { label: 'Analytics', route: '/student/analytics', icon: 'analytics' },
+    { label: 'Leaderboard', route: '/student/leaderboard', icon: 'leaderboard' },
     { label: 'Subscription', route: '/student/subscription', icon: 'subscription' },
   ];
 
@@ -123,7 +123,7 @@ export default function StudentLayout({ children }) {
           padding: '22px 16px 18px', cursor: 'pointer',
           borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: 10,
         }}>
-          <img src="/assets/Mentora.png" alt="Mentora"
+          <img src="/assets/logo-cropped.png" alt="Mentora"
             style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: 0.3, lineHeight: 1.2 }}>Mentora</div>

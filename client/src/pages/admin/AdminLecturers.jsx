@@ -32,7 +32,7 @@ export default function AdminLecturers() {
       const res = await adminAPI.get('/admin/lecturers', { params: { search, page, limit: 15 } });
       setLecturers(res.data.lecturers);
       setTotal(res.data.total);
-    } catch (err) { if (err.response?.status === 401) navigate('/admin'); }
+    } catch (err) { if (err.response?.status === 401) navigate('/signin'); }
     finally       { setLoading(false); }
   };
 

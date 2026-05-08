@@ -39,7 +39,7 @@ export default function AdminSubscriptions() {
     try {
       const res = await adminAPI.get('/admin/subscriptions', { params: { search, plan: planFilter, page, limit: 15 } });
       setUsers(res.data.users); setTotal(res.data.total);
-    } catch (err) { if (err.response?.status === 401) navigate('/admin'); }
+    } catch (err) { if (err.response?.status === 401) navigate('/signin'); }
     finally       { setLoading(false); }
   };
 

@@ -35,7 +35,7 @@ export default function AdminManagement() {
     try {
       const res = await adminAPI.get('/admin/admins');
       setAdmins(res.data.admins);
-    } catch (err) { if (err.response?.status === 401) navigate('/admin'); }
+    } catch (err) { if (err.response?.status === 401) navigate('/signin'); }
     finally       { setLoading(false); }
   };
 

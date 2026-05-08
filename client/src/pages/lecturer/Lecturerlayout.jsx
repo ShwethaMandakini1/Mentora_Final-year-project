@@ -110,7 +110,7 @@ export default function LecturerLayout({ children }) {
           style={{ cursor: 'pointer' }}
         >
           <img
-            src="/assets/Mentora.png"
+            src="/assets/logo-cropped.png"
             alt="Mentora"
             className="ios-logo-image"
             style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}

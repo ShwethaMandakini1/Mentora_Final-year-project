@@ -1,41 +1,41 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Icon = ({ name, size = 18 }) => {
   const icons = {
     dashboard: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     ),
     users: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
     admins: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
     subscriptions: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
       </svg>
     ),
     broadcast: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+        <circle cx="12" cy="12" r="2" /><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
       </svg>
     ),
     logout: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
       </svg>
     ),
   };
@@ -45,21 +45,21 @@ const Icon = ({ name, size = 18 }) => {
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const path     = location.pathname;
-  const admin    = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const path = location.pathname;
+  const { user, logout } = useAuth();
+  const admin = user || JSON.parse(localStorage.getItem('adminUser') || '{}');
 
   const navItems = [
-    { label: 'Dashboard',     route: '/admin/dashboard',    icon: 'dashboard'     },
-    { label: 'Users',         route: '/admin/users',         icon: 'users'         },
-    { label: 'Admins',        route: '/admin/admins',        icon: 'admins'        },
+    { label: 'Dashboard', route: '/admin/dashboard', icon: 'dashboard' },
+    { label: 'Users', route: '/admin/users', icon: 'users' },
+    { label: 'Admins', route: '/admin/admins', icon: 'admins' },
     { label: 'Subscriptions', route: '/admin/subscriptions', icon: 'subscriptions' },
-    { label: 'Broadcast',     route: '/admin/broadcast',     icon: 'broadcast'     },
+    { label: 'Broadcast', route: '/admin/broadcast', icon: 'broadcast' },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    navigate('/admin');
+    logout();
+    navigate('/signin');
   };
 
   const sidebarStyle = {
@@ -96,7 +96,7 @@ export default function AdminLayout({ children }) {
           padding: '22px 18px 18px', cursor: 'pointer',
           borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: 10,
         }}>
-          <img src="/assets/Mentora.png" alt="Mentora"
+          <img src="/assets/logo-cropped.png" alt="Mentora"
             style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: 0.3 }}>Mentora</div>

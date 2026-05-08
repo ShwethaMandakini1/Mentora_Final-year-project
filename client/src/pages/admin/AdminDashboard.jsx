@@ -36,7 +36,7 @@ export default function AdminDashboard() {
       const res = await adminAPI.get('/admin/stats');
       setStats(res.data.stats);
       setCached(res.data.cached);
-    } catch (err) { if (err.response?.status === 401) navigate('/admin'); }
+    } catch (err) { if (err.response?.status === 401) navigate('/signin'); }
     finally       { setLoading(false); }
   };
 
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
 
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
-  if (loading) return (
+  if (loading || !stats) return (
     <AdminLayout>
       <div className="adm-loading" style={{ paddingTop: 120 }}>
         <div className="adm-spinner" />

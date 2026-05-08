@@ -28,14 +28,13 @@ import LecturerNotifications from './pages/lecturer/LecturerNotification';
 import { LecturerProfile }   from './pages/lecturer/Lecturerextras';
 
 // ─── Admin imports ────────────────────────────────────────────────────────────
-import AdminLogin         from './pages/admin/AdminLogin';
 import AdminDashboard     from './pages/admin/AdminDashboard';
 import AdminUsers         from './pages/admin/AdminUsers';
 import AdminLecturers     from './pages/admin/AdminLecturers';
 import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminManagement    from './pages/admin/AdminManagement';
 
-// ─── Protected Route (students & lecturers) ───────────────────────────────────
+// ─── Protected Route (Admin, Student, Lecturer) ──────────────────────────────
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
 
@@ -46,20 +45,16 @@ function ProtectedRoute({ children, role }) {
   );
 
   if (!user) {
-    const savedRole = localStorage.getItem('role');
-    return <Navigate to={savedRole === 'lecturer' ? '/signin?role=lecturer' : '/signin'} replace />;
+    return <Navigate to="/signin" replace />;
   }
 
-  if (role && user.role !== role)
-    return <Navigate to={user.role === 'student' ? '/student/dashboard' : '/lecturer/dashboard'} replace />;
+  if (role && user.role !== role) {
+    // Redirect to their own dashboard if they try to access wrong role path
+    if (user.role === 'admin')    return <Navigate to="/admin/dashboard"    replace />;
+    if (user.role === 'lecturer') return <Navigate to="/lecturer/dashboard" replace />;
+    return <Navigate to="/student/dashboard" replace />;
+  }
 
-  return children;
-}
-
-// ─── Admin Protected Route ────────────────────────────────────────────────────
-function AdminRoute({ children }) {
-  const token = localStorage.getItem('adminToken');
-  if (!token) return <Navigate to="/admin" replace />;
   return children;
 }
 
@@ -95,13 +90,13 @@ function AppRoutes() {
       <Route path="/lecturer/notifications" element={<ProtectedRoute role="lecturer"><LecturerNotifications /></ProtectedRoute>} />
       <Route path="/lecturer/profile"       element={<ProtectedRoute role="lecturer"><LecturerProfile /></ProtectedRoute>} />
 
-      {/* ─── Admin (completely separate, hidden from students/lecturers) ─── */}
-      <Route path="/admin"                  element={<AdminLogin />} />
-      <Route path="/admin/dashboard"        element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/users"            element={<AdminRoute><AdminUsers /></AdminRoute>} />
-      <Route path="/admin/lecturers"        element={<AdminRoute><AdminLecturers /></AdminRoute>} />
-      <Route path="/admin/subscriptions"    element={<AdminRoute><AdminSubscriptions /></AdminRoute>} />
-      <Route path="/admin/admins"           element={<AdminRoute><AdminManagement /></AdminRoute>} />
+      {/* ─── Admin (Protected) ─── */}
+      <Route path="/admin"                  element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/dashboard"        element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users"            element={<ProtectedRoute role="admin"><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/lecturers"        element={<ProtectedRoute role="admin"><AdminLecturers /></ProtectedRoute>} />
+      <Route path="/admin/subscriptions"    element={<ProtectedRoute role="admin"><AdminSubscriptions /></ProtectedRoute>} />
+      <Route path="/admin/admins"           element={<ProtectedRoute role="admin"><AdminManagement /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
