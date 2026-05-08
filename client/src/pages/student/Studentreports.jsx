@@ -88,17 +88,17 @@ export default function StudentReports() {
             <div className="card-title">{selected.assignmentName}</div>
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-              <div style={{ background: '#eff6ff', borderRadius: 12, padding: 18,
-                            flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Score</div>
-                <div style={{ fontSize: 42, fontWeight: 800, color: '#1f2937' }}>
+              <div style={{ background: 'var(--foam)', borderRadius: 12, padding: 18,
+                            flex: 1, textAlign: 'center', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score</div>
+                <div style={{ fontSize: 42, fontWeight: 700, color: 'var(--navy)', letterSpacing: '-2px' }}>
                   {selected.score != null ? `${selected.score}%` : '—'}
                 </div>
               </div>
-              <div style={{ background: '#dcfce7', borderRadius: 12, padding: 18,
-                            flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Grade</div>
-                <div style={{ fontSize: 42, fontWeight: 800, color: '#16a34a' }}>
+              <div style={{ background: 'rgba(22,163,74,0.08)', borderRadius: 12, padding: 18,
+                            flex: 1, textAlign: 'center', border: '1px solid rgba(22,163,74,0.12)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Grade</div>
+                <div style={{ fontSize: 42, fontWeight: 700, color: '#16a34a', letterSpacing: '-1px' }}>
                   {selected.grade || '—'}
                 </div>
               </div>
@@ -146,18 +146,13 @@ export default function StudentReports() {
               ) : (
                 <button
                   onClick={() => setShowRegradeModal(true)}
+                  className="btn-outline"
                   style={{
-                    width: '100%', padding: '10px 16px',
-                    background: '#fff', border: '1.5px solid #e5e7eb',
-                    borderRadius: 8, fontSize: 13, fontWeight: 600,
-                    color: '#374151', cursor: 'pointer',
+                    width: '100%', padding: '10px 16px', fontSize: 13,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    transition: 'border-color 0.15s, background 0.15s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#2563eb'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}
                 >
-                  🔄 Request Re-grade
+                  Request Re-grade
                 </button>
               )}
             </div>
@@ -166,9 +161,7 @@ export default function StudentReports() {
           {/* ── Right: Feedback + Info ── */}
           <div className="card">
             <div className="card-title">Lecturer Feedback</div>
-            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd',
-                          borderRadius: 10, padding: 16, fontSize: 13,
-                          color: '#0c4a6e', lineHeight: 1.8 }}>
+            <div className="ai-summary-box">
               {selected.feedback
                 ? selected.feedback
                 : 'No feedback has been provided for this submission yet.'}
@@ -317,14 +310,14 @@ export default function StudentReports() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
                       gap: 16, marginBottom: 20 }}>
           {[
-            { label: 'Total Graded', val: submissions.length, color: '#2563eb', bg: '#eff6ff' },
-            { label: 'Average Score', val: submissions.length > 0 ? `${avg}%` : '—', color: '#16a34a', bg: '#dcfce7' },
-            { label: 'Best Grade',   val: bestGrade, color: '#7c3aed', bg: '#f3e8ff' },
+            { label: 'Total Graded', val: submissions.length, color: 'var(--sky)', bg: 'var(--foam)' },
+            { label: 'Average Score', val: submissions.length > 0 ? `${avg}%` : '—', color: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
+            { label: 'Best Grade',   val: bestGrade, color: 'var(--ocean)', bg: 'rgba(0,119,182,0.08)' },
           ].map(s => (
             <div key={s.label} className="card"
-              style={{ textAlign: 'center', background: s.bg, boxShadow: 'none' }}>
-              <div style={{ fontSize: 32, fontWeight: 800, color: s.color }}>{s.val}</div>
-              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{s.label}</div>
+              style={{ textAlign: 'center', background: s.bg, boxShadow: 'none', border: '1px solid rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 30, fontWeight: 700, color: s.color, letterSpacing: '-1px' }}>{s.val}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -335,9 +328,9 @@ export default function StudentReports() {
           {loading ? (
             <p style={{ fontSize: 14, color: '#9ca3af', padding: '20px 0' }}>Loading...</p>
           ) : submissions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📄</div>
-              <p style={{ fontSize: 14 }}>No graded submissions yet.</p>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 12, opacity: 0.3 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <p style={{ fontSize: 14, fontWeight: 500 }}>No graded submissions yet.</p>
               <p style={{ fontSize: 13 }}>Your results will appear here once your lecturer has marked your assignments.</p>
             </div>
           ) : (
@@ -369,10 +362,10 @@ export default function StudentReports() {
                     <td>{s.moduleName || s.moduleCode || '—'}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 60, height: 6, background: '#e5e7eb',
+                        <div style={{ width: 60, height: 6, background: 'var(--border)',
                                       borderRadius: 3, overflow: 'hidden' }}>
                           <div style={{ width: `${s.score || 0}%`, height: '100%',
-                                        background: '#22c55e', borderRadius: 3 }}/>
+                                        background: 'var(--sky)', borderRadius: 3 }}/>
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 600 }}>{s.score || 0}%</span>
                       </div>

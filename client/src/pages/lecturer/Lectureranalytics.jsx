@@ -3,91 +3,113 @@ import LecturerLayout from './Lecturerlayout';
 import { getAllSubmissions } from '../../api/api';
 import './dashboard.css';
 
-export default function LecturerReports() {
+export default function LecturerAnalytics() {
   const [submissions, setSubmissions] = useState([]);
   const [selected,    setSelected]    = useState(null);
-  const [loading,     setLoading]     = useState(true); // ← NEW
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     getAllSubmissions()
       .then(r => setSubmissions(r.data.submissions.filter(s => s.status === 'Graded')))
       .catch(() => {})
-      .finally(() => setLoading(false)); // ← NEW: always stop loading
+      .finally(() => setLoading(false));
   }, []);
 
-  // Mock is now ONLY used as a dev fallback after loading finishes
   const mock = [
-    {_id:'1',student:{username:'Kavindi K'},assignmentName:'HCI Final Report',moduleName:'HCI',score:85,grade:'A',
-     feedback:'Excellent work on HCI principles.',rubricScores:[{criterion:'Thesis',score:27,maxScore:30},{criterion:'Evidence',score:22,maxScore:25},{criterion:'Structure',score:17,maxScore:20},{criterion:'Analysis',score:12,maxScore:15},{criterion:'Writing',score:7,maxScore:10}]},
-    {_id:'2',student:{username:'Amal P'},   assignmentName:'SE Proposal',      moduleName:'SE', score:82,grade:'A-',
-     feedback:'Good proposal with clear objectives.',rubricScores:[{criterion:'Thesis',score:25,maxScore:30},{criterion:'Evidence',score:21,maxScore:25},{criterion:'Structure',score:16,maxScore:20},{criterion:'Analysis',score:12,maxScore:15},{criterion:'Writing',score:8,maxScore:10}]},
-    {_id:'3',student:{username:'Saman W'},  assignmentName:'DBMS Research',    moduleName:'DBMS',score:75,grade:'B+',
-     feedback:'Satisfactory research on database systems.',rubricScores:[{criterion:'Thesis',score:22,maxScore:30},{criterion:'Evidence',score:19,maxScore:25},{criterion:'Structure',score:15,maxScore:20},{criterion:'Analysis',score:11,maxScore:15},{criterion:'Writing',score:8,maxScore:10}]},
+    { _id:'1', student:{ username:'Kavindi K' }, assignmentName:'HCI Final Report', moduleName:'HCI', score:85, grade:'A',
+      feedback:'Excellent work on HCI principles.',
+      rubricScores:[{ criterion:'Thesis', score:27, maxScore:30 }, { criterion:'Evidence', score:22, maxScore:25 }, { criterion:'Structure', score:17, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:7, maxScore:10 }] },
+    { _id:'2', student:{ username:'Amal P' }, assignmentName:'SE Proposal', moduleName:'SE', score:82, grade:'A-',
+      feedback:'Good proposal with clear objectives.',
+      rubricScores:[{ criterion:'Thesis', score:25, maxScore:30 }, { criterion:'Evidence', score:21, maxScore:25 }, { criterion:'Structure', score:16, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
+    { _id:'3', student:{ username:'Saman W' }, assignmentName:'DBMS Research', moduleName:'DBMS', score:75, grade:'B+',
+      feedback:'Satisfactory research on database systems.',
+      rubricScores:[{ criterion:'Thesis', score:22, maxScore:30 }, { criterion:'Evidence', score:19, maxScore:25 }, { criterion:'Structure', score:15, maxScore:20 }, { criterion:'Analysis', score:11, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
   ];
 
-  // Only fall back to mock AFTER loading is done (i.e. API returned nothing)
   const display = loading ? [] : (submissions.length > 0 ? submissions : mock);
-
   const avg     = display.length > 0 ? Math.round(display.reduce((a, s) => a + (s.score || 0), 0) / display.length) : 0;
   const highest = display.length > 0 ? Math.max(...display.map(s => s.score || 0)) : 0;
 
-  // ── Loading spinner ────────────────────────────────────────────────────────
-  const LoadingScreen = () => (
-    <LecturerLayout>
-      <div className="topbar">
-        <div className="topbar-left"><h1>Reports</h1><p>Grading summary and feedback records</p></div>
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+  });
+
+  const topbar = (
+    <div className="ios-topbar">
+      <div className="ios-topbar-left">
+        <h1 className="ios-page-title">Reports & Analytics</h1>
+        <p className="ios-page-date">{dateStr}</p>
       </div>
-      <div className="page-content">
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'80px 0', gap:16 }}>
-          <div style={{
-            width: 40, height: 40, border: '4px solid #e5e7eb',
-            borderTop: '4px solid #2563eb', borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-          }} />
-          <div style={{ color:'#9ca3af', fontSize:13 }}>Loading reports...</div>
+    </div>
+  );
+
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (loading) return (
+    <LecturerLayout>
+      {topbar}
+      <div className="ios-page-content">
+        <div className="ios-loading-state">
+          <div className="ios-spinner" />
+          <p>Loading reports…</p>
         </div>
-        {/* Inline keyframe for the spinner */}
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </LecturerLayout>
   );
 
-  // ── Show spinner while fetching ────────────────────────────────────────────
-  if (loading) return <LoadingScreen />;
-
   // ── Detail view ────────────────────────────────────────────────────────────
   if (selected) return (
     <LecturerLayout>
-      <div className="topbar"><div className="topbar-left"><h1>Reports</h1></div></div>
-      <div className="page-content">
-        <button className="back-btn" onClick={() => setSelected(null)}>← Back</button>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }}>
-          <div className="card">
-            <div className="card-title">{selected.assignmentName} — {selected.student?.username}</div>
-            <div style={{ display:'flex', gap:'12px', marginBottom:'18px' }}>
-              {[['Score', `${selected.score}%`, '#eff6ff', '#2563eb'], ['Grade', selected.grade, '#dcfce7', '#16a34a']].map(([l, v, bg, c]) => (
-                <div key={l} style={{ flex:1, background:bg, borderRadius:'10px', padding:'14px', textAlign:'center' }}>
-                  <div style={{ fontSize:'11px', color:'#6b7280' }}>{l}</div>
-                  <div style={{ fontSize:'36px', fontWeight:'800', color:c }}>{v}</div>
-                </div>
-              ))}
+      {topbar}
+      <div className="ios-page-content">
+        <button className="ios-back-btn" onClick={() => setSelected(null)}>← Back</button>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+          {/* Left: Score + Rubric */}
+          <div className="ios-card" style={{ padding: '20px 24px' }}>
+            <div className="ios-card-title" style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 16 }}>
+              {selected.assignmentName} — {selected.student?.username}
             </div>
-            <div className="card-title">Rubric Breakdown</div>
+
+            <div className="ios-score-cards">
+              <div className="ios-score-card ios-score-card--score">
+                <div className="ios-score-card-label">Score</div>
+                <div className="ios-score-card-value">{selected.score}%</div>
+              </div>
+              <div className="ios-score-card ios-score-card--grade">
+                <div className="ios-score-card-label">Grade</div>
+                <div className="ios-score-card-value">{selected.grade}</div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 12 }}>
+              Rubric Breakdown
+            </div>
             {(selected.rubricScores || []).map(r => (
-              <div key={r.criterion} style={{ marginBottom:'10px' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-                  <span style={{ fontSize:'12px', fontWeight:'500', color:'#374151' }}>{r.criterion}</span>
-                  <span style={{ fontSize:'12px', color:'#6b7280' }}>{r.score}/{r.maxScore}</span>
+              <div key={r.criterion} className="ios-rubric-row">
+                <div className="ios-rubric-header">
+                  <span className="ios-rubric-criterion">{r.criterion}</span>
+                  <span className="ios-rubric-score">{r.score}/{r.maxScore}</span>
                 </div>
-                <div className="prog-wrap">
-                  <div className="prog-fill" style={{ width:`${(r.score / r.maxScore) * 100}%`, background:'#22c55e' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="ios-progress-wrap">
+                    <div
+                      className="ios-progress-fill"
+                      style={{ width: `${(r.score / r.maxScore) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="card">
-            <div className="card-title">Feedback Given</div>
-            <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:'10px', padding:'16px', fontSize:'13px', color:'#0c4a6e', lineHeight:'1.8' }}>
+
+          {/* Right: Feedback */}
+          <div className="ios-card" style={{ padding: '20px 24px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 12 }}>
+              Feedback Given
+            </div>
+            <div className="ios-feedback-panel">
               {selected.feedback || 'No feedback recorded.'}
             </div>
           </div>
@@ -99,73 +121,109 @@ export default function LecturerReports() {
   // ── Main list view ─────────────────────────────────────────────────────────
   return (
     <LecturerLayout>
-      <div className="topbar">
-        <div className="topbar-left"><h1>Reports</h1><p>Grading summary and feedback records</p></div>
-      </div>
-      <div className="page-content">
+      {topbar}
+      <div className="ios-page-content">
 
-        {/* Stats */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'20px' }}>
+        {/* Stat cards */}
+        <div className="ios-stats-grid-3">
           {[
-            { label:'Total Graded',  val: display.length,  color:'#2563eb' },
-            { label:'Class Average', val: `${avg}%`,        color:'#16a34a' },
-            { label:'Highest Score', val: `${highest}%`,    color:'#7c3aed' },
+            { label: 'Total Graded',  val: display.length,  colorClass: 'stat-blue',  icon: 'icon-graded' },
+            { label: 'Class Average', val: `${avg}%`,        colorClass: 'stat-green', icon: 'icon-avg'    },
+            { label: 'Highest Score', val: `${highest}%`,    colorClass: 'stat-ocean', icon: 'icon-avg'    },
           ].map(s => (
-            <div key={s.label} className="stat-card">
-              <div className="stat-num" style={{ color: s.color }}>{s.val}</div>
-              <div className="stat-label">{s.label}</div>
+            <div key={s.label} className={`ios-stat-card ${s.colorClass}`}>
+              <div className="ios-stat-icon-wrap">
+                <StatIcon name={s.icon} />
+              </div>
+              <div className="ios-stat-num">{s.val}</div>
+              <div className="ios-stat-label">{s.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Table */}
-        <div className="card">
-          <div className="card-title">Graded Submissions</div>
+        {/* Table card */}
+        <div className="ios-card">
+          <div className="ios-card-header">
+            <span className="ios-card-title">Graded Submissions</span>
+            <span className="ios-count-pill">{display.length}</span>
+          </div>
 
           {display.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'40px 0', color:'#9ca3af', fontSize:13 }}>
-              <div style={{ fontSize:32, marginBottom:8 }}>📭</div>
-              No graded submissions yet.
+            <div className="ios-empty-state">
+              <svg viewBox="0 0 40 40" fill="none" className="ios-empty-icon">
+                <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+                <path d="M13 20h14M20 13v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+              </svg>
+              <p>No graded submissions yet.</p>
             </div>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>Assignment</th>
-                  <th>Module</th>
-                  <th>Score</th>
-                  <th>Grade</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {display.map(s => (
-                  <tr key={s._id}>
-                    <td style={{ fontWeight:'500' }}>{s.student?.username || '—'}</td>
-                    <td>{s.assignmentName}</td>
-                    <td>{s.moduleName}</td>
-                    <td>
-                      <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                        <div style={{ width:'50px', height:'5px', background:'#e5e7eb', borderRadius:'3px', overflow:'hidden' }}>
-                          <div style={{ width:`${s.score || 0}%`, height:'100%', background:'#22c55e' }} />
-                        </div>
-                        <span style={{ fontSize:'12px', fontWeight:'600' }}>{s.score || 0}%</span>
-                      </div>
-                    </td>
-                    <td><span className="badge graded">{s.grade || '—'}</span></td>
-                    <td>
-                      <button className="btn-primary" style={{ padding:'5px 12px', fontSize:'12px' }} onClick={() => setSelected(s)}>
-                        View
-                      </button>
-                    </td>
+            <div className="ios-table-wrap">
+              <table className="ios-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Assignment</th>
+                    <th>Module</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {display.map(s => (
+                    <tr key={s._id}>
+                      <td>
+                        <div className="ios-student-cell">
+                          <div className="ios-table-avatar">{s.student?.username?.[0]?.toUpperCase() || 'S'}</div>
+                          <span className="ios-student-name">{s.student?.username || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="ios-assignment-cell">{s.assignmentName}</td>
+                      <td><span className="ios-module-tag">{s.moduleName}</span></td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div className="ios-progress-wrap" style={{ width: 50, flex: 'none' }}>
+                            <div className="ios-progress-fill" style={{ width: `${s.score || 0}%` }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)' }}>{s.score || 0}%</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="ios-badge ios-badge--grade">{s.grade || '—'}</span>
+                      </td>
+                      <td>
+                        <button
+                          className="ios-action-btn ios-action-btn--ghost"
+                          onClick={() => setSelected(s)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
     </LecturerLayout>
   );
+}
+
+function StatIcon({ name }) {
+  const icons = {
+    'icon-graded': (
+      <svg viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M7.5 11l2.5 2.5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    'icon-avg': (
+      <svg viewBox="0 0 22 22" fill="none">
+        <path d="M3 16l5-5 4 4 7-8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  };
+  return icons[name] || null;
 }

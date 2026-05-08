@@ -13,9 +13,7 @@ export default function StudentLeaderboard() {
   const [totalRanked, setTotalRanked]   = useState(0);
   const [loading, setLoading]           = useState(true);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -28,59 +26,54 @@ export default function StudentLeaderboard() {
       setBadges({ earned: badgeRes.data.earned || [], locked: badgeRes.data.locked || [] });
       setMyRank(badgeRes.data.myRank);
       setTotalRanked(badgeRes.data.totalRanked || 0);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const myEntry = leaderboard.find(s => s.username === user?.username);
 
   const rankMedal = (rank) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
+    if (rank === 1) return '1st';
+    if (rank === 2) return '2nd';
+    if (rank === 3) return '3rd';
     return `#${rank}`;
   };
 
   const rankColor = (rank) => {
-    if (rank === 1) return { color: '#d97706', bg: '#fef3c7' };
-    if (rank === 2) return { color: '#6b7280', bg: '#f3f4f6' };
-    if (rank === 3) return { color: '#b45309', bg: '#fef3c7' };
-    return { color: '#374151', bg: '#fff' };
+    if (rank === 1) return { color: '#d97706', bg: 'rgba(217,119,6,0.10)' };
+    if (rank === 2) return { color: '#6b7280', bg: 'rgba(107,114,128,0.10)' };
+    if (rank === 3) return { color: '#b45309', bg: 'rgba(180,83,9,0.08)' };
+    return { color: 'var(--text-sec)', bg: 'transparent' };
   };
 
   return (
     <StudentLayout>
-      <div style={{ padding: '30px 40px' }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', margin: 0 }}>
-            🏆 Leaderboard & Badges
-          </h2>
-          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 6 }}>
-            See how you rank among your peers and earn badges for your achievements
-          </p>
+      {/* Topbar */}
+      <div className="topbar">
+        <div className="topbar-left">
+          <h1>Leaderboard &amp; Badges</h1>
+          <p>See how you rank among your peers and earn badges for your achievements</p>
         </div>
+      </div>
+
+      <div className="page-content">
 
         {/* My rank banner */}
         {myRank && (
           <div style={{
-            background: 'linear-gradient(135deg, #1e40af, #7c3aed)',
-            borderRadius: 16, padding: '20px 28px', marginBottom: 28,
+            background: 'linear-gradient(135deg, var(--navy), var(--ocean))',
+            borderRadius: 'var(--radius-xl)', padding: '20px 28px', marginBottom: 20,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexWrap: 'wrap', gap: 16, color: '#fff',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 24, fontWeight: 800,
+                fontSize: 20, fontWeight: 800,
               }}>
-                {rankMedal(myRank)}
+                #{myRank}
               </div>
               <div>
                 <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 2 }}>Your Current Rank</div>
@@ -90,178 +83,156 @@ export default function StudentLeaderboard() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 24 }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 800 }}>{myEntry?.average || 0}%</div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>Average Score</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 800 }}>{badges.earned.length}</div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>Badges Earned</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 800 }}>{myEntry?.submissions || 0}</div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>Submissions</div>
-              </div>
+              {[
+                { val: `${myEntry?.average || 0}%`, label: 'Average Score' },
+                { val: badges.earned.length, label: 'Badges Earned' },
+                { val: myEntry?.submissions || 0, label: 'Submissions' },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800 }}>{s.val}</div>
+                  <div style={{ fontSize: 12, opacity: 0.75 }}>{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: 24 }}>
-          {[['leaderboard', '🏆 Leaderboard'], ['badges', '🎖️ My Badges']].map(([t, label]) => (
-            <button key={t} onClick={() => setTab(t)} style={{
-              background: 'none', border: 'none', padding: '10px 24px',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              color: tab === t ? '#2563eb' : '#6b7280',
-              borderBottom: tab === t ? '2px solid #2563eb' : '2px solid transparent',
-              marginBottom: -2,
-            }}>
+        <div className="tab-bar">
+          {[['leaderboard', 'Leaderboard'], ['badges', 'My Badges']].map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`tab${tab === t ? ' active' : ''}`}
+              style={{ background: 'none', border: 'none' }}>
               {label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-            Loading...
+          <div style={{ textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: 'var(--text-muted)' }}>
+            <div style={{ width: 28, height: 28, border: '3px solid rgba(0,150,199,0.15)', borderTopColor: 'var(--sky)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            Loading leaderboard…
           </div>
         ) : (
 
-          /* ── LEADERBOARD TAB ── */
           tab === 'leaderboard' ? (
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+
+            /* ── LEADERBOARD TAB ── */
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
 
               {/* Top 3 podium */}
               {leaderboard.length >= 3 && (
                 <div style={{
-                  background: 'linear-gradient(135deg, #f9fafb, #eff6ff)',
-                  padding: '32px 24px', borderBottom: '1px solid #e5e7eb',
+                  background: 'linear-gradient(135deg, var(--foam), rgba(0,150,199,0.06))',
+                  padding: '32px 24px', borderBottom: '1px solid var(--border)',
                   display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: 16,
                 }}>
                   {/* 2nd place */}
                   <div style={{ textAlign: 'center', flex: 1, maxWidth: 160 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>🥈</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>2nd</div>
                     <div style={{
-                      background: '#fff', borderRadius: 12, padding: '16px 12px',
-                      border: '2px solid #e5e7eb', marginBottom: 8,
-                      height: 100, display: 'flex', flexDirection: 'column',
+                      background: 'white', borderRadius: 'var(--radius-md)', padding: '16px 12px',
+                      border: '1.5px solid var(--border)', marginBottom: 8,
+                      height: 90, display: 'flex', flexDirection: 'column',
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <div style={{ fontSize: 36 }}>👤</div>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(107,114,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--text-sec)' }}>
+                        {leaderboard[1]?.username?.[0]?.toUpperCase()}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: '#374151' }}>
-                      {leaderboard[1]?.username}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{leaderboard[1]?.score} pts</div>
-                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{leaderboard[1]?.average}% avg</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-sec)' }}>{leaderboard[1]?.username}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{leaderboard[1]?.score} pts</div>
                   </div>
 
                   {/* 1st place */}
                   <div style={{ textAlign: 'center', flex: 1, maxWidth: 180 }}>
-                    <div style={{ fontSize: 40, marginBottom: 8 }}>🥇</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#d97706', marginBottom: 6 }}>1st</div>
                     <div style={{
                       background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                      borderRadius: 12, padding: '16px 12px',
+                      borderRadius: 'var(--radius-md)', padding: '16px 12px',
                       border: '2px solid #f59e0b', marginBottom: 8,
-                      height: 120, display: 'flex', flexDirection: 'column',
+                      height: 110, display: 'flex', flexDirection: 'column',
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <div style={{ fontSize: 44 }}>👑</div>
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'white', fontSize: 16 }}>
+                        {leaderboard[0]?.username?.[0]?.toUpperCase()}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: '#111827' }}>
-                      {leaderboard[0]?.username}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#d97706', fontWeight: 700 }}>
-                      {leaderboard[0]?.score} pts
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{leaderboard[0]?.average}% avg</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--navy)' }}>{leaderboard[0]?.username}</div>
+                    <div style={{ fontSize: 13, color: '#d97706', fontWeight: 700 }}>{leaderboard[0]?.score} pts</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{leaderboard[0]?.average}% avg</div>
                   </div>
 
                   {/* 3rd place */}
                   <div style={{ textAlign: 'center', flex: 1, maxWidth: 160 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>🥉</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>3rd</div>
                     <div style={{
-                      background: '#fff', borderRadius: 12, padding: '16px 12px',
-                      border: '2px solid #e5e7eb', marginBottom: 8,
-                      height: 90, display: 'flex', flexDirection: 'column',
+                      background: 'white', borderRadius: 'var(--radius-md)', padding: '16px 12px',
+                      border: '1.5px solid var(--border)', marginBottom: 8,
+                      height: 80, display: 'flex', flexDirection: 'column',
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <div style={{ fontSize: 32 }}>👤</div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(180,83,9,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#b45309' }}>
+                        {leaderboard[2]?.username?.[0]?.toUpperCase()}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: '#374151' }}>
-                      {leaderboard[2]?.username}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{leaderboard[2]?.score} pts</div>
-                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{leaderboard[2]?.average}% avg</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-sec)' }}>{leaderboard[2]?.username}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{leaderboard[2]?.score} pts</div>
                   </div>
                 </div>
               )}
 
               {/* Full table */}
               {leaderboard.length === 0 ? (
-                <div style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🏆</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#374151' }}>No rankings yet</div>
-                  <div style={{ fontSize: 13, marginTop: 6 }}>
-                    Submit and get graded assignments to appear on the leaderboard!
-                  </div>
+                <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3 }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-sec)' }}>No rankings yet</div>
+                  <div style={{ fontSize: 13 }}>Submit and get graded assignments to appear on the leaderboard!</div>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <table className="data-table">
                   <thead>
-                    <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                      {['Rank', 'Student', 'Score', 'Average', 'Submissions', 'Badges'].map(h => (
-                        <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 13 }}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
+                    <tr><th>Rank</th><th>Student</th><th>Score</th><th>Average</th><th>Submissions</th><th>Badges</th></tr>
                   </thead>
                   <tbody>
                     {leaderboard.map((s, i) => {
                       const isMe = s.username === user?.username;
                       const rc   = rankColor(s.rank);
                       return (
-                        <tr key={s._id} style={{
-                          borderBottom: '1px solid #f3f4f6',
-                          background: isMe ? '#eff6ff' : i % 2 === 0 ? '#fff' : '#fafafa',
-                        }}>
-                          <td style={{ padding: '14px 16px' }}>
+                        <tr key={s._id} style={{ background: isMe ? 'rgba(0,150,199,0.04)' : 'transparent' }}>
+                          <td>
                             <span style={{
                               background: rc.bg, color: rc.color,
                               borderRadius: 8, padding: '3px 10px',
-                              fontWeight: 700, fontSize: 13,
+                              fontWeight: 700, fontSize: 12,
                             }}>
                               {rankMedal(s.rank)}
                             </span>
                           </td>
-                          <td style={{ padding: '14px 16px' }}>
+                          <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <div style={{
                                 width: 32, height: 32, borderRadius: '50%',
-                                background: isMe ? '#2563eb' : '#e5e7eb',
+                                background: isMe ? 'var(--sky)' : 'rgba(0,150,199,0.08)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 14, fontWeight: 700,
-                                color: isMe ? '#fff' : '#374151',
+                                fontSize: 12, fontWeight: 700,
+                                color: isMe ? '#fff' : 'var(--ocean)',
                               }}>
                                 {s.username?.[0]?.toUpperCase()}
                               </div>
                               <div>
-                                <div style={{ fontWeight: isMe ? 700 : 500, color: '#111827' }}>
-                                  {s.username} {isMe && <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 700 }}>(You)</span>}
+                                <div style={{ fontWeight: isMe ? 700 : 500, color: 'var(--navy)', fontSize: 13 }}>
+                                  {s.username} {isMe && <span style={{ fontSize: 11, color: 'var(--sky)', fontWeight: 700 }}>(You)</span>}
                                 </div>
-                                <div style={{ fontSize: 11, color: '#9ca3af' }}>{s.studentId}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.studentId}</div>
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <span style={{ fontWeight: 800, color: '#2563eb', fontSize: 15 }}>
-                              {s.score}
-                            </span>
-                            <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 2 }}>pts</span>
+                          <td>
+                            <span style={{ fontWeight: 700, color: 'var(--sky)', fontSize: 14 }}>{s.score}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>pts</span>
                           </td>
-                          <td style={{ padding: '14px 16px' }}>
+                          <td>
                             <span style={{
                               fontWeight: 700,
                               color: s.average >= 80 ? '#16a34a' : s.average >= 60 ? '#d97706' : '#dc2626',
@@ -269,18 +240,17 @@ export default function StudentLeaderboard() {
                               {s.average}%
                             </span>
                           </td>
-                          <td style={{ padding: '14px 16px', color: '#374151' }}>
-                            {s.submissions}
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
+                          <td style={{ color: 'var(--text-sec)' }}>{s.submissions}</td>
+                          <td>
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {s.badges.slice(0, 4).map(b => (
-                                <span key={b.id} title={b.name} style={{ fontSize: 18, cursor: 'default' }}>
+                                <span key={b.id} title={b.name}
+                                  style={{ fontSize: 14, cursor: 'default', opacity: 0.85 }}>
                                   {b.icon}
                                 </span>
                               ))}
                               {s.badges.length > 4 && (
-                                <span style={{ fontSize: 11, color: '#9ca3af', alignSelf: 'center' }}>
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)', alignSelf: 'center' }}>
                                   +{s.badges.length - 4}
                                 </span>
                               )}
@@ -299,36 +269,28 @@ export default function StudentLeaderboard() {
             /* ── BADGES TAB ── */
             <div>
               {/* Progress */}
-              <div style={{
-                background: '#fff', border: '1px solid #e5e7eb',
-                borderRadius: 12, padding: '20px 24px', marginBottom: 20,
-                display: 'flex', alignItems: 'center', gap: 20,
-              }}>
+              <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
-                      Badge Progress
-                    </span>
-                    <span style={{ fontSize: 13, color: '#6b7280' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>Badge Progress</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                       {badges.earned.length} / {badges.earned.length + badges.locked.length} earned
                     </span>
                   </div>
-                  <div style={{ background: '#e5e7eb', borderRadius: 8, height: 10 }}>
-                    <div style={{
+                  <div className="prog-wrap" style={{ height: 10 }}>
+                    <div className="prog-fill" style={{
                       width: `${badges.earned.length + badges.locked.length > 0
                         ? (badges.earned.length / (badges.earned.length + badges.locked.length)) * 100
                         : 0}%`,
-                      background: 'linear-gradient(90deg, #2563eb, #7c3aed)',
-                      borderRadius: 8, height: 10, transition: 'width 0.5s ease',
                     }} />
                   </div>
                 </div>
                 <div style={{
                   width: 60, height: 60, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
-                  border: '2px solid #bfdbfe',
+                  background: 'linear-gradient(135deg, var(--foam), rgba(0,150,199,0.12))',
+                  border: '2px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 24, fontWeight: 800, color: '#2563eb',
+                  fontSize: 22, fontWeight: 800, color: 'var(--sky)',
                 }}>
                   {badges.earned.length}
                 </div>
@@ -336,34 +298,29 @@ export default function StudentLeaderboard() {
 
               {/* Earned badges */}
               {badges.earned.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 14 }}>
-                    🎖️ Earned Badges ({badges.earned.length})
-                  </h3>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 14, marginTop: 16 }}>
+                    Earned Badges ({badges.earned.length})
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                     {badges.earned.map(b => (
                       <div key={b.id} style={{
-                        background: b.bg, border: `2px solid ${b.color}30`,
-                        borderRadius: 12, padding: '20px 16px', textAlign: 'center',
-                        boxShadow: `0 4px 12px ${b.color}20`,
-                        transition: 'transform 0.2s',
+                        background: b.bg, border: `1.5px solid ${b.color}30`,
+                        borderRadius: 'var(--radius-lg)', padding: '20px 16px', textAlign: 'center',
+                        boxShadow: `0 4px 12px ${b.color}18`,
+                        transition: 'transform 0.2s', cursor: 'default',
                       }}
                         onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                         onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                       >
-                        <div style={{ fontSize: 36, marginBottom: 8 }}>{b.icon}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: b.color, marginBottom: 4 }}>
-                          {b.name}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
-                          {b.description}
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>{b.icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: b.color, marginBottom: 4 }}>{b.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>{b.description}</div>
                         <div style={{
-                          marginTop: 8, fontSize: 10, fontWeight: 700,
-                          color: b.color, background: `${b.color}15`,
-                          borderRadius: 20, padding: '2px 8px', display: 'inline-block',
+                          marginTop: 8, fontSize: 10, fontWeight: 700, color: b.color,
+                          background: `${b.color}15`, borderRadius: 20, padding: '2px 8px', display: 'inline-block',
                         }}>
-                          ✓ EARNED
+                          EARNED
                         </div>
                       </div>
                     ))}
@@ -374,31 +331,24 @@ export default function StudentLeaderboard() {
               {/* Locked badges */}
               {badges.locked.length > 0 && (
                 <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 14 }}>
-                    🔒 Locked Badges ({badges.locked.length})
-                  </h3>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>
+                    Locked Badges ({badges.locked.length})
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                     {badges.locked.map(b => (
                       <div key={b.id} style={{
-                        background: '#f9fafb', border: '2px solid #e5e7eb',
-                        borderRadius: 12, padding: '20px 16px', textAlign: 'center',
-                        opacity: 0.7,
+                        background: 'white', border: '1.5px solid var(--border)',
+                        borderRadius: 'var(--radius-lg)', padding: '20px 16px', textAlign: 'center',
+                        opacity: 0.6,
                       }}>
-                        <div style={{ fontSize: 36, marginBottom: 8, filter: 'grayscale(1)' }}>
-                          {b.icon}
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', marginBottom: 4 }}>
-                          {b.name}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5 }}>
-                          {b.description}
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 8, filter: 'grayscale(1)' }}>{b.icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>{b.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>{b.description}</div>
                         <div style={{
-                          marginTop: 8, fontSize: 10, fontWeight: 700,
-                          color: '#9ca3af', background: '#e5e7eb',
-                          borderRadius: 20, padding: '2px 8px', display: 'inline-block',
+                          marginTop: 8, fontSize: 10, fontWeight: 700, color: 'var(--text-muted)',
+                          background: 'rgba(0,0,0,0.05)', borderRadius: 20, padding: '2px 8px', display: 'inline-block',
                         }}>
-                          🔒 LOCKED
+                          LOCKED
                         </div>
                       </div>
                     ))}
@@ -407,12 +357,10 @@ export default function StudentLeaderboard() {
               )}
 
               {badges.earned.length === 0 && badges.locked.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🎖️</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#374151' }}>No badges yet</div>
-                  <div style={{ fontSize: 13, marginTop: 6 }}>
-                    Submit assignments to start earning badges!
-                  </div>
+                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3 }}><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-sec)' }}>No badges yet</div>
+                  <div style={{ fontSize: 13 }}>Submit assignments to start earning badges!</div>
                 </div>
               )}
             </div>

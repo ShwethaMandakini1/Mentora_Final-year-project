@@ -8,14 +8,14 @@ import './dashboard.css';
 
 // ── Notification type config ──────────────────────────────────────────────────
 const TYPE_CONFIG = {
-  new_assignment:      { icon: '📋', color: '#2563eb', bg: '#eff6ff', label: 'New Assignment'  },
-  marks_received:      { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
-  regrade_accepted:    { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
-  deadline_reminder:   { icon: '⏰', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
-  approval_requested:  { icon: '📤', color: '#d97706', bg: '#fef3c7', label: 'Under Review'    },
-  submission_approved: { icon: '✅', color: '#16a34a', bg: '#dcfce7', label: 'Approved!'        },
-  submission_rejected: { icon: '❌', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
-  default:             { icon: '🔔', color: '#6b7280', bg: '#f9fafb', label: 'Notification'     },
+  new_assignment:      { icon: '·', color: '#0077B6', bg: '#E0F2FE', label: 'New Assignment'  },
+  marks_received:      { icon: '·', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
+  regrade_accepted:    { icon: '·', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
+  deadline_reminder:   { icon: '·', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
+  approval_requested:  { icon: '·', color: '#0096C7', bg: '#CAF0F8', label: 'Under Review'    },
+  submission_approved: { icon: '·', color: '#16a34a', bg: '#dcfce7', label: 'Approved'        },
+  submission_rejected: { icon: '·', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
+  default:             { icon: '·', color: '#0077B6', bg: '#E0F2FE', label: 'Notification'     },
 };
 
 // ── Time formatter ─────────────────────────────────────────────────────────────
@@ -519,13 +519,15 @@ export function StudentProfile() {
             {preview
               ? <img src={preview} alt="Profile"
                   style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 10px', display: 'block' }} />
-              : <div className="profile-pic">👤</div>
+              : <div className="profile-pic" style={{ fontSize: 20 }}>
+                  {user?.username?.[0]?.toUpperCase() || 'S'}
+                </div>
             }
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{user?.username}</div>
-            <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>Student • {form.degree || 'BSc Computer Science'}</div>
+            <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--navy)', marginBottom: '4px' }}>{user?.username}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>Student • {form.degree || 'BSc Computer Science'}</div>
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <span style={{ color: '#2563eb', fontSize: '12px', cursor: uploading ? 'not-allowed' : 'pointer', fontWeight: '500' }}
+              <span style={{ color: 'var(--sky)', fontSize: '12px', cursor: uploading ? 'not-allowed' : 'pointer', fontWeight: '500' }}
                 onClick={() => !uploading && fileInputRef.current.click()}>
                 {uploading ? 'Uploading...' : 'Upload new picture'}
               </span>
@@ -550,7 +552,7 @@ export function StudentProfile() {
                   {editing === f.key
                     ? <input value={form[f.key]}
                         onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                        style={{ border: '1.5px solid #2563eb', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', fontFamily: 'Poppins,sans-serif', marginTop: '4px', outline: 'none', width: '100%', maxWidth: '300px' }} />
+                        style={{ border: '1.5px solid var(--sky)', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', fontFamily: 'var(--font)', marginTop: '4px', outline: 'none', width: '100%', maxWidth: '300px' }} />
                     : <div className="field-value">{form[f.key] || '—'}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>

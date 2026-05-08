@@ -9,48 +9,39 @@ const BASE = 'http://localhost:5000';
 
 export function LecturerProfile() {
   const { user, setUser } = useAuth();
-  const [editing,  setEditing]  = useState('');
-  const [form,     setForm]     = useState({ username:'', email:'', staffId:'', department:'' });
-  const [pwForm,   setPwForm]   = useState({ currentPassword:'', newPassword:'' });
-  const [msg,      setMsg]      = useState('');
-  const [err,      setErr]      = useState('');
-  const [avatar,   setAvatar]   = useState(null);   // current displayed avatar URL
-  const [uploading,setUploading]= useState(false);
+  const [editing,   setEditing]   = useState('');
+  const [form,      setForm]      = useState({ username: '', email: '', staffId: '', department: '' });
+  const [pwForm,    setPwForm]    = useState({ currentPassword: '', newPassword: '' });
+  const [msg,       setMsg]       = useState('');
+  const [err,       setErr]       = useState('');
+  const [avatar,    setAvatar]    = useState(null);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
 
   useEffect(() => {
     getProfile().then(r => {
       const u = r.data.user;
-      setForm({ username: u.username||'', email: u.email||'', staffId: u.staffId||'', department: u.department||'' });
-      // Support profilePicture or avatar field from backend
+      setForm({ username: u.username || '', email: u.email || '', staffId: u.staffId || '', department: u.department || '' });
       const pic = u.profilePicture || u.avatar || u.profilePic || null;
       if (pic) setAvatar(pic.startsWith('http') ? pic : `${BASE}/${pic.replace(/^\//, '')}`);
     }).catch(() => {});
   }, []);
 
-  // ── Profile picture upload ──────────────────────────────────────────────────
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate type and size (max 5MB)
     if (!file.type.startsWith('image/')) return setErr('Please select an image file.');
     if (file.size > 5 * 1024 * 1024) return setErr('Image must be under 5MB.');
-
-    // Show preview immediately
     const previewUrl = URL.createObjectURL(file);
     setAvatar(previewUrl);
     setUploading(true);
     setMsg(''); setErr('');
-
     try {
       const formData = new FormData();
       formData.append('profilePicture', file);
-
       const res = await API.post('/auth/upload-profile-picture', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
       const updatedUser = res.data.user || res.data;
       const pic = updatedUser.profilePicture || updatedUser.avatar || updatedUser.profilePic;
       if (pic) {
@@ -61,11 +52,9 @@ export function LecturerProfile() {
       setMsg('Profile picture updated!');
     } catch (e) {
       setErr(e.response?.data?.message || 'Upload failed. Please try again.');
-      // Revert preview on error
       setAvatar(null);
     } finally {
       setUploading(false);
-      // Reset file input so same file can be re-selected
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -78,13 +67,11 @@ export function LecturerProfile() {
       if (setUser) setUser(prev => ({ ...prev, profilePicture: null, avatar: null }));
       setMsg('Profile picture removed.');
     } catch {
-      // If no remove endpoint, just clear locally
       setAvatar(null);
       setMsg('Profile picture removed.');
     }
   };
 
-  // ── Save profile fields ─────────────────────────────────────────────────────
   const saveProfile = async () => {
     setMsg(''); setErr('');
     try {
@@ -104,173 +91,154 @@ export function LecturerProfile() {
       await updatePassword(pwForm);
       setMsg('Password updated successfully!');
       setEditing('');
-      setPwForm({ currentPassword:'', newPassword:'' });
+      setPwForm({ currentPassword: '', newPassword: '' });
     } catch (e) {
       setErr(e.response?.data?.message || 'Update failed');
     }
   };
 
   const fields = [
-    { key:'username',   label:'Name' },
-    { key:'email',      label:'Email' },
-    { key:'staffId',    label:'Staff ID' },
-    { key:'department', label:'Department' },
+    { key: 'username',   label: 'Name' },
+    { key: 'email',      label: 'Email' },
+    { key: 'staffId',    label: 'Staff ID' },
+    { key: 'department', label: 'Department' },
   ];
+
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+  });
 
   return (
     <LecturerLayout>
-      <div className="topbar">
-        <div className="topbar-left"><h1>Profile</h1><p>Manage your account settings</p></div>
+      <div className="ios-topbar">
+        <div className="ios-topbar-left">
+          <h1 className="ios-page-title">Profile</h1>
+          <p className="ios-page-date">Manage your account settings · {dateStr}</p>
+        </div>
       </div>
-      <div className="page-content">
-        <div className="profile-wrap">
 
-          {/* ── Avatar card ── */}
-          <div className="card" style={{ textAlign:'center', marginBottom:16 }}>
+      <div className="ios-page-content">
+        <div className="ios-profile-wrap">
 
-            {/* Hidden file input */}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              style={{ display:'none' }}
-              onChange={handleFileChange}
-            />
+          {/* Hidden file input */}
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
 
-            {/* Avatar display */}
-            <div style={{
-              width: 88, height: 88, borderRadius: '50%',
-              margin: '0 auto 12px',
-              background: '#e5e7eb',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', position: 'relative',
-              border: '3px solid #e5e7eb',
-            }}>
+          {/* Avatar card */}
+          <div className="ios-card" style={{ padding: '28px 24px', textAlign: 'center', marginBottom: 16 }}>
+            <div className="ios-profile-avatar-wrap">
               {uploading && (
-                <div style={{
-                  position:'absolute', inset:0, background:'rgba(0,0,0,0.4)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  borderRadius:'50%', zIndex:2,
-                }}>
-                  <div style={{
-                    width:20, height:20, border:'3px solid #fff',
-                    borderTop:'3px solid transparent', borderRadius:'50%',
-                    animation:'spin 0.8s linear infinite',
-                  }}/>
+                <div className="ios-avatar-upload-overlay">
+                  <div className="ios-avatar-spinner" />
                 </div>
               )}
               {avatar ? (
-                <img
-                  src={avatar}
-                  alt="Profile"
-                  style={{ width:'100%', height:'100%', objectFit:'cover' }}
-                  onError={() => setAvatar(null)}
-                />
+                <img src={avatar} alt="Profile" onError={() => setAvatar(null)} />
               ) : (
-                <span style={{ fontSize:36 }}>👨‍🏫</span>
+                <span className="ios-profile-avatar-placeholder">👨‍🏫</span>
               )}
             </div>
 
-            <div style={{ fontSize:16, fontWeight:600, color:'#1f2937', marginBottom:4 }}>
-              {user?.username}
-            </div>
-            <div style={{ fontSize:12, color:'#9ca3af', marginBottom:12 }}>
-              Lecturer • {form.department || 'Computing'}
-            </div>
+            <div className="ios-profile-name">{user?.username}</div>
+            <div className="ios-profile-role">Lecturer · {form.department || 'Computing'}</div>
 
-            {/* Upload / Remove buttons */}
-            <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
+            <div className="ios-avatar-actions">
               <span
+                className={`ios-avatar-upload-link${uploading ? ' ios-avatar-upload-link--disabled' : ''}`}
                 onClick={() => !uploading && fileRef.current?.click()}
-                style={{
-                  color: uploading ? '#9ca3af' : '#2563eb',
-                  fontSize:12, cursor: uploading ? 'not-allowed' : 'pointer', fontWeight:500,
-                }}>
-                {uploading ? 'Uploading...' : 'Upload new picture'}
+              >
+                {uploading ? 'Uploading…' : 'Upload new picture'}
               </span>
               {avatar && (
-                <span
-                  onClick={handleRemovePicture}
-                  style={{ color:'#ef4444', fontSize:12, cursor:'pointer', fontWeight:500 }}>
+                <span className="ios-avatar-remove-link" onClick={handleRemovePicture}>
                   Remove
                 </span>
               )}
             </div>
-
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
 
-          {msg && (
-            <div style={{ marginBottom:10, padding:'9px 14px', borderRadius:8, background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0', fontSize:13 }}>
-              {msg}
-            </div>
-          )}
-          {err && (
-            <div style={{ marginBottom:10, padding:'9px 14px', borderRadius:8, background:'#fef2f2', color:'#dc2626', border:'1px solid #fecaca', fontSize:13 }}>
-              {err}
-            </div>
-          )}
+          {/* Alerts */}
+          {msg && <div className="ios-alert ios-alert--success">{msg}</div>}
+          {err && <div className="ios-alert ios-alert--error">{err}</div>}
 
-          {/* ── Account settings ── */}
-          <div className="card">
-            <div style={{ fontSize:14, fontWeight:700, color:'#1f2937', marginBottom:4 }}>Account Settings</div>
-            <div style={{ fontSize:12, color:'#9ca3af', marginBottom:18 }}>Basic Information</div>
+          {/* Account settings card */}
+          <div className="ios-card" style={{ padding: '20px 24px' }}>
+            <div className="ios-profile-section-title">Account Settings</div>
+            <div className="ios-profile-section-sub">Basic Information</div>
 
             {fields.map(f => (
-              <div key={f.key} className="profile-field">
-                <div style={{ flex:1 }}>
-                  <div className="field-label">{f.label}</div>
-                  {editing === f.key
-                    ? <input
-                        value={form[f.key]}
-                        onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                        style={{ border:'1.5px solid #2563eb', borderRadius:8, padding:'6px 10px', fontSize:13, fontFamily:'Poppins,sans-serif', marginTop:4, outline:'none', width:'100%', maxWidth:300 }}
-                      />
-                    : <div className="field-value">{form[f.key] || '—'}</div>
-                  }
+              <div key={f.key} className="ios-profile-field">
+                <div className="ios-profile-field-body">
+                  <div className="ios-profile-field-label">{f.label}</div>
+                  {editing === f.key ? (
+                    <input
+                      className="ios-input"
+                      value={form[f.key]}
+                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      style={{ marginTop: 6 }}
+                    />
+                  ) : (
+                    <div className="ios-profile-field-value">{form[f.key] || '—'}</div>
+                  )}
                 </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  {editing === f.key
-                    ? <>
-                        <button className="btn-primary" style={{ padding:'5px 14px', fontSize:12 }} onClick={saveProfile}>Save</button>
-                        <button className="btn-outline"  style={{ padding:'5px 14px', fontSize:12 }} onClick={() => setEditing('')}>Cancel</button>
-                      </>
-                    : <span style={{ cursor:'pointer', color:'#9ca3af', fontSize:18 }} onClick={() => setEditing(f.key)}>›</span>
-                  }
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  {editing === f.key ? (
+                    <>
+                      <button className="ios-action-btn ios-action-btn--primary" style={{ fontSize: 11 }} onClick={saveProfile}>Save</button>
+                      <button className="ios-action-btn ios-action-btn--ghost"   style={{ fontSize: 11 }} onClick={() => setEditing('')}>Cancel</button>
+                    </>
+                  ) : (
+                    <svg
+                      className="ios-profile-edit-chevron"
+                      viewBox="0 0 8 12" fill="none"
+                      onClick={() => setEditing(f.key)}
+                    >
+                      <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </div>
               </div>
             ))}
 
             {/* Password field */}
-            <div className="profile-field">
-              <div style={{ flex:1 }}>
-                <div className="field-label">Password</div>
-                {editing === 'password'
-                  ? <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:6 }}>
-                      <input
-                        placeholder="Current password" type="password"
-                        value={pwForm.currentPassword}
-                        onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })}
-                        style={{ border:'1.5px solid #2563eb', borderRadius:8, padding:'6px 10px', fontSize:13, fontFamily:'Poppins,sans-serif', outline:'none', width:'100%', maxWidth:300 }}
-                      />
-                      <input
-                        placeholder="New password" type="password"
-                        value={pwForm.newPassword}
-                        onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                        style={{ border:'1.5px solid #2563eb', borderRadius:8, padding:'6px 10px', fontSize:13, fontFamily:'Poppins,sans-serif', outline:'none', width:'100%', maxWidth:300 }}
-                      />
-                    </div>
-                  : <div className="field-value">••••••••</div>
-                }
+            <div className="ios-profile-field">
+              <div className="ios-profile-field-body">
+                <div className="ios-profile-field-label">Password</div>
+                {editing === 'password' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
+                    <input
+                      className="ios-input"
+                      type="password"
+                      placeholder="Current password"
+                      value={pwForm.currentPassword}
+                      onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })}
+                    />
+                    <input
+                      className="ios-input"
+                      type="password"
+                      placeholder="New password"
+                      value={pwForm.newPassword}
+                      onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
+                    />
+                  </div>
+                ) : (
+                  <div className="ios-profile-field-value ios-profile-field-value--dots">••••••••</div>
+                )}
               </div>
-              <div style={{ display:'flex', gap:8 }}>
-                {editing === 'password'
-                  ? <>
-                      <button className="btn-primary" style={{ padding:'5px 14px', fontSize:12 }} onClick={savePassword}>Save</button>
-                      <button className="btn-outline"  style={{ padding:'5px 14px', fontSize:12 }} onClick={() => setEditing('')}>Cancel</button>
-                    </>
-                  : <span style={{ cursor:'pointer', color:'#9ca3af', fontSize:18 }} onClick={() => setEditing('password')}>›</span>
-                }
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                {editing === 'password' ? (
+                  <>
+                    <button className="ios-action-btn ios-action-btn--primary" style={{ fontSize: 11 }} onClick={savePassword}>Save</button>
+                    <button className="ios-action-btn ios-action-btn--ghost"   style={{ fontSize: 11 }} onClick={() => setEditing('')}>Cancel</button>
+                  </>
+                ) : (
+                  <svg
+                    className="ios-profile-edit-chevron"
+                    viewBox="0 0 8 12" fill="none"
+                    onClick={() => setEditing('password')}
+                  >
+                    <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </div>
             </div>
           </div>

@@ -24,10 +24,10 @@ async function createAdmin() {
   console.log('✅ Connected to MongoDB');
 
   // ── Change these values ──────────────────────────────────────────────────
-  const USERNAME = 'superadmin';
-  const EMAIL    = 'admin@mentora.com';
+  const USERNAME = 'afmin';
+  const EMAIL    = 'afmin@mentora.com';
   const PASSWORD = 'Admin@1234';        // change after first login!
-  const NAME     = 'Super Admin';
+  const NAME     = 'Admin User';
   // ─────────────────────────────────────────────────────────────────────────
 
   const existing = await Admin.findOne({ username: USERNAME });

@@ -4,6 +4,64 @@ import { useAuth } from '../../context/AuthContext';
 import { getNotifications } from '../../api/api';
 import './dashboard.css';
 
+const Icon = ({ name, size = 18 }) => {
+  const icons = {
+    dashboard: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    ),
+    submissions: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    ),
+    reports: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    ),
+    analytics: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+    ),
+    leaderboard: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 21V7l4-4 4 4v14"/><path d="M3 21h18"/><path d="M10 21v-5h4v5"/>
+      </svg>
+    ),
+    subscription: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    ),
+    bell: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    ),
+    profile: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    ),
+    logout: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    ),
+  };
+  return icons[name] || null;
+};
+
 export default function StudentLayout({ children }) {
   const navigate   = useNavigate();
   const location   = useLocation();
@@ -25,64 +83,35 @@ export default function StudentLayout({ children }) {
   }, []);
 
   const navItems = [
-    { label: 'Dashboard',    route: '/student/dashboard'    },
-    { label: 'Submissions',  route: '/student/submissions'  },
-    { label: 'Reports',      route: '/student/reports'      },
-    { label: 'Analytics',    route: '/student/analytics'    },
-    { label: 'Leaderboard',  route: '/student/leaderboard'  },
-    { label: 'Subscription', route: '/student/subscription' },
+    { label: 'Dashboard',    route: '/student/dashboard',    icon: 'dashboard'    },
+    { label: 'Submissions',  route: '/student/submissions',  icon: 'submissions'  },
+    { label: 'Reports',      route: '/student/reports',      icon: 'reports'      },
+    { label: 'Analytics',    route: '/student/analytics',    icon: 'analytics'    },
+    { label: 'Leaderboard',  route: '/student/leaderboard',  icon: 'leaderboard'  },
+    { label: 'Subscription', route: '/student/subscription', icon: 'subscription' },
   ];
-
-  const icons = {
-    Dashboard: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-      </svg>
-    ),
-    Submissions: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-      </svg>
-    ),
-    Reports: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    ),
-    Analytics: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6"  y1="20" x2="6"  y2="14"/>
-      </svg>
-    ),
-    Leaderboard: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 21V7l4-4 4 4v14"/><path d="M3 21h18"/><path d="M10 21v-5h4v5"/>
-      </svg>
-    ),
-    Subscription: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
-    ),
-  };
 
   const sidebarStyle = {
     width: 220,
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #0f1f3d 0%, #1a3560 60%, #0f2847 100%)',
+    background: 'linear-gradient(180deg, #03045E 0%, #023E8A 60%, #0077B6 100%)',
     display: 'flex',
     flexDirection: 'column',
     position: 'fixed',
     top: 0, left: 0, bottom: 0,
     zIndex: 100,
-    boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+    boxShadow: '4px 0 24px rgba(3,4,94,0.25)',
   };
+
+  const navItemStyle = (active) => ({
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
+    fontSize: 13.5, fontWeight: active ? 600 : 400,
+    color: active ? '#fff' : 'rgba(255,255,255,0.65)',
+    background: active ? 'rgba(255,255,255,0.16)' : 'transparent',
+    transition: 'all 0.18s ease',
+    marginBottom: 2,
+  });
 
   return (
     <div className="dash-layout">
@@ -90,40 +119,32 @@ export default function StudentLayout({ children }) {
 
         {/* Brand */}
         <div onClick={() => navigate('/student/dashboard')} style={{
-          display: 'flex', alignItems: 'center', gap: 2,
-          padding: '22px 16px 18px 3px', cursor: 'pointer',
-          borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: 8,
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '22px 16px 18px', cursor: 'pointer',
+          borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: 10,
         }}>
           <img src="/assets/Mentora.png" alt="Mentora"
-            style={{ width: 90, height: 70, objectFit: 'cover', flexShrink: 0 }} />
+            style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: 0.4, lineHeight: 1.2 }}>
-              Mentora
-            </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', lineHeight: 1.4, marginTop: 2 }}>
-              From Submission to Insight.
-            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: 0.3, lineHeight: 1.2 }}>Mentora</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, marginTop: 2 }}>From Submission to Insight.</div>
           </div>
         </div>
 
         {/* Nav */}
-        <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column' }}>
           {navItems.map(n => {
             const active = path.startsWith(n.route);
             return (
-              <div key={n.route} onClick={() => navigate(n.route)} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-                fontSize: 14, fontWeight: active ? 600 : 400,
-                color: active ? '#fff' : 'rgba(255,255,255,0.62)',
-                background: active ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-                boxShadow: active ? '0 4px 12px rgba(37,99,235,0.35)' : 'none',
-                transition: 'all 0.18s ease',
-              }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}>
+              <div
+                key={n.route}
+                style={navItemStyle(active)}
+                onClick={() => navigate(n.route)}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+              >
                 <span style={{ color: active ? '#fff' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
-                  {icons[n.label]}
+                  <Icon name={n.icon} />
                 </span>
                 {n.label}
               </div>
@@ -132,75 +153,52 @@ export default function StudentLayout({ children }) {
         </div>
 
         {/* Bottom */}
-        <div style={{
-          padding: '10px', borderTop: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', flexDirection: 'column', gap: 2,
-        }}>
+        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+
           {/* Notifications */}
-          <div onClick={() => navigate('/student/notifications')} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 14,
-            transition: 'all 0.18s ease',
-            color: path === '/student/notifications' ? '#fff' : 'rgba(255,255,255,0.62)',
-            background: path === '/student/notifications' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-          }}
-            onMouseEnter={e => { if (path !== '/student/notifications') e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-            onMouseLeave={e => { if (path !== '/student/notifications') e.currentTarget.style.background = 'transparent'; }}>
+          <div
+            style={{ ...navItemStyle(path === '/student/notifications'), justifyContent: 'space-between' }}
+            onClick={() => navigate('/student/notifications')}
+            onMouseEnter={e => { if (path !== '/student/notifications') e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+            onMouseLeave={e => { if (path !== '/student/notifications') e.currentTarget.style.background = path === '/student/notifications' ? 'rgba(255,255,255,0.16)' : 'transparent'; }}
+          >
             <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>🔔</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}><Icon name="bell" /></span>
               Notifications
             </span>
             {unreadCount > 0 && (
-              <span style={{
-                background: '#ef4444', color: '#fff', borderRadius: 20,
-                padding: '1px 7px', fontSize: 10, fontWeight: 700,
-              }}>
+              <span style={{ background: '#ef4444', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>
                 {unreadCount}
               </span>
             )}
           </div>
 
           {/* Profile */}
-          <div onClick={() => navigate('/student/profile')} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 14,
-            transition: 'all 0.18s ease',
-            color: path === '/student/profile' ? '#fff' : 'rgba(255,255,255,0.62)',
-            background: path === '/student/profile' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : 'transparent',
-          }}
-            onMouseEnter={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-            onMouseLeave={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'transparent'; }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </span>
+          <div
+            style={navItemStyle(path === '/student/profile')}
+            onClick={() => navigate('/student/profile')}
+            onMouseEnter={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+            onMouseLeave={e => { if (path !== '/student/profile') e.currentTarget.style.background = 'transparent'; }}
+          >
+            <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}><Icon name="profile" /></span>
             Profile
           </div>
 
           {/* Logout */}
-          <div onClick={() => { logout(); window.location.href = '/signin?role=student'; }} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, color: 'rgba(255,255,255,0.62)', transition: 'all 0.18s ease',
-          }}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 13.5, color: 'rgba(255,255,255,0.65)', transition: 'all 0.18s ease' }}
+            onClick={() => { logout(); window.location.href = '/signin?role=student'; }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#fca5a5'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.62)'; }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </span>
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
+          >
+            <span style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }}><Icon name="logout" /></span>
             Log out
           </div>
         </div>
       </div>
 
       {/* MAIN */}
-      <div style={{ marginLeft: 220, minHeight: '100vh', background: '#f5f6fa', flex: 1 }}>
+      <div style={{ marginLeft: 220, minHeight: '100vh', background: '#EEF4FA', flex: 1 }}>
         {children}
       </div>
     </div>

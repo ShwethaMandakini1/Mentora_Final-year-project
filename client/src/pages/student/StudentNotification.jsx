@@ -16,14 +16,14 @@ const POLL_INTERVAL = 30000; // 30 seconds
 
 // ── Notification type config ──────────────────────────────────────────────────
 const TYPE_CONFIG = {
-  new_assignment:      { icon: '📋', color: '#2563eb', bg: '#eff6ff', label: 'New Assignment'  },
-  marks_received:      { icon: '🎯', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
-  regrade_accepted:    { icon: '✅', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
-  deadline_reminder:   { icon: '⏰', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
-  approval_requested:  { icon: '📤', color: '#d97706', bg: '#fef3c7', label: 'Under Review'    },
-  submission_approved: { icon: '✅', color: '#16a34a', bg: '#dcfce7', label: 'Approved!'        },
-  submission_rejected: { icon: '❌', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
-  default:             { icon: '🔔', color: '#6b7280', bg: '#f9fafb', label: 'Notification'     },
+  new_assignment:      { icon: '·', color: '#0077B6', bg: '#E0F2FE', label: 'New Assignment'  },
+  marks_received:      { icon: '·', color: '#16a34a', bg: '#dcfce7', label: 'Marks Released'  },
+  regrade_accepted:    { icon: '·', color: '#7c3aed', bg: '#f3e8ff', label: 'Re-grade Update' },
+  deadline_reminder:   { icon: '·', color: '#d97706', bg: '#fffbeb', label: 'Deadline'         },
+  approval_requested:  { icon: '·', color: '#0096C7', bg: '#CAF0F8', label: 'Under Review'    },
+  submission_approved: { icon: '·', color: '#16a34a', bg: '#dcfce7', label: 'Approved'        },
+  submission_rejected: { icon: '·', color: '#dc2626', bg: '#fef2f2', label: 'Needs Revision'  },
+  default:             { icon: '·', color: '#0077B6', bg: '#E0F2FE', label: 'Notification'     },
 };
 
 // ── Time formatter ────────────────────────────────────────────────────────────
@@ -204,15 +204,15 @@ export default function StudentNotifications() {
           <div className="topbar-right" style={{ gap: 10 }}>
             {unreadCount > 0 && (
               <button className="btn-outline" style={{ fontSize: 12, padding: '6px 14px' }} onClick={markAllRead}>
-                ✓ Mark all read
+                Mark all read
               </button>
             )}
             <button onClick={deleteAll} style={{
               fontSize: 12, padding: '6px 14px', background: 'none',
               border: '1.5px solid #fecaca', borderRadius: 8,
-              color: '#dc2626', cursor: 'pointer', fontWeight: 600,
+              color: '#dc2626', cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font)',
             }}>
-              🗑 Clear all
+              Clear all
             </button>
           </div>
         )}
@@ -223,14 +223,15 @@ export default function StudentNotifications() {
         {/* Profile banner */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 16px' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#e0e7ff',
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #0096C7, #00B4D8)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 26, fontWeight: 700, color: '#3730a3', marginBottom: 8,
-            border: '3px solid #c7d2fe',
+            fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 8,
+            border: '3px solid #CAF0F8',
           }}>
             {user?.username?.[0]?.toUpperCase() || 'S'}
           </div>
-          <div style={{ fontWeight: 600, fontSize: 15, color: '#111827' }}>
+          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>
             {user?.username || 'Student'}
           </div>
         </div>
@@ -239,15 +240,15 @@ export default function StudentNotifications() {
         {newCount > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+            background: 'var(--foam)', border: '1px solid rgba(0,150,199,0.2)', borderRadius: 12,
             padding: '10px 16px', marginBottom: 14,
           }}>
-            <span style={{ fontSize: 13, color: '#1e40af', fontWeight: 600 }}>
-              🔔 {newCount} new notification{newCount > 1 ? 's' : ''} arrived
+            <span style={{ fontSize: 13, color: 'var(--ocean)', fontWeight: 600 }}>
+              {newCount} new notification{newCount > 1 ? 's' : ''} arrived
             </span>
             <button onClick={dismissNewBanner} style={{
               fontSize: 12, padding: '4px 12px', borderRadius: 6,
-              background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer',
+              background: 'var(--sky)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'var(--font)',
             }}>
               Dismiss
             </button>
@@ -264,17 +265,17 @@ export default function StudentNotifications() {
             return (
               <button key={f} onClick={() => setActiveFilter(f)} style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.15s',
-                background: activeFilter === f ? '#1e40af' : '#f3f4f6',
-                color:      activeFilter === f ? '#fff'    : '#6b7280',
-                border:     activeFilter === f ? '1.5px solid #1e40af' : '1.5px solid #e5e7eb',
+                cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font)',
+                background: activeFilter === f ? 'var(--sky)' : 'white',
+                color:      activeFilter === f ? '#fff'    : 'var(--text-muted)',
+                border:     activeFilter === f ? '1.5px solid var(--sky)' : '1.5px solid var(--border)',
               }}>
                 {f}
                 {count > 0 && (
                   <span style={{
                     marginLeft: 4, borderRadius: 10, padding: '1px 6px', fontSize: 10,
-                    background: activeFilter === f ? 'rgba(255,255,255,0.3)' : '#e5e7eb',
-                    color:      activeFilter === f ? '#fff' : '#374151',
+                    background: activeFilter === f ? 'rgba(255,255,255,0.25)' : 'var(--foam)',
+                    color:      activeFilter === f ? '#fff' : 'var(--ocean)',
                   }}>
                     {count}
                   </span>
@@ -287,14 +288,14 @@ export default function StudentNotifications() {
         {/* Notification list */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ padding: '48px 0', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
-              <div style={{ marginBottom: 8, fontSize: 20 }}>⏳</div>
-              Loading notifications...
+            <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 28, height: 28, border: '3px solid rgba(0,150,199,0.15)', borderTopColor: 'var(--sky)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              Loading notifications…
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding: '56px 0', textAlign: 'center', color: '#9ca3af' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔔</div>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>No notifications here</div>
+            <div style={{ padding: '56px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 12, opacity: 0.4 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-sec)' }}>No notifications here</div>
               <div style={{ fontSize: 13, marginTop: 4 }}>
                 {activeFilter !== 'All' ? `No ${activeFilter.toLowerCase()} notifications.` : "You're all caught up!"}
               </div>
@@ -333,12 +334,9 @@ export default function StudentNotifications() {
                         )}
 
                         <div style={{
-                          width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                          background: cfg.bg, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: 18,
-                        }}>
-                          {cfg.icon}
-                        </div>
+                          width: 10, height: 10, borderRadius: '50%', flexShrink: 0, marginTop: 4,
+                          background: cfg.color, opacity: 0.85,
+                        }}/>
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -399,19 +397,19 @@ export default function StudentNotifications() {
                             }}>
                               {!n.read && (
                                 <button onClick={() => markRead(n._id)} style={menuItemStyle}>
-                                  ✓ &nbsp;Mark as read
+                                  Mark as read
                                 </button>
                               )}
                               {isViewable(n) && (
                                 <button onClick={() => handleView(n)} style={menuItemStyle}>
-                                  👁 &nbsp;View
+                                  View
                                 </button>
                               )}
                               <button
                                 onClick={() => deleteOne(n._id)}
                                 style={{ ...menuItemStyle, color: '#dc2626', borderBottom: 'none' }}
                               >
-                                🗑 &nbsp;Delete
+                                Delete
                               </button>
                             </div>
                           )}
