@@ -6,7 +6,7 @@ import { getProfile, updateProfile, updatePassword } from '../../api/api';
 import API from '../../api/api';
 import './dashboard.css';
 
-const BASE = 'http://localhost:5000';
+const BASE = 'import.meta.env.VITE_API_URL';
 
 export function LecturerProfile() {
   const { user, setUser } = useAuth();

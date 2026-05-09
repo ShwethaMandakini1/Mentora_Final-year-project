@@ -3,7 +3,7 @@ import LecturerLayout from './Lecturerlayout';
 import axios from 'axios';
 import './dashboard.css';
 
-const API = 'http://localhost:5000/api';
+const API = 'import.meta.env.VITE_API_URL';
 const BASE = 'http://localhost:5000';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

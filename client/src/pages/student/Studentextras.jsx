@@ -435,7 +435,7 @@ export function StudentProfile() {
     getProfile().then(r => {
       const u = r.data.user;
       setForm({ username: u.username || '', email: u.email || '', studentId: u.studentId || '', dateOfBirth: u.dateOfBirth || '', degree: u.degree || '' });
-      if (u.profilePicture) setPreview(`http://localhost:5000${u.profilePicture}`);
+      if (u.profilePicture) setPreview(`import.meta.env.VITE_API_URL${u.profilePicture}`);
     }).catch(() => {});
   }, []);
 
@@ -470,18 +470,18 @@ export function StudentProfile() {
     try {
       setUploading(true);
       setMsg(''); setErr('');
-      const res = await axios.put('http://localhost:5000/api/user/profile/picture', formData, {
+      const res = await axios.put('import.meta.env.VITE_API_URL/api/user/profile/picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
       setUser(prev => ({ ...prev, profilePicture: res.data.profilePicture }));
-      setPreview(`http://localhost:5000${res.data.profilePicture}`);
+      setPreview(`import.meta.env.VITE_API_URL${res.data.profilePicture}`);
       setMsg('Profile picture updated!');
     } catch (e) {
       setErr('Upload failed. Please try again.');
-      setPreview(user?.profilePicture ? `http://localhost:5000${user.profilePicture}` : null);
+      setPreview(user?.profilePicture ? `import.meta.env.VITE_API_URL${user.profilePicture}` : null);
     } finally {
       setUploading(false);
     }
@@ -490,7 +490,7 @@ export function StudentProfile() {
   const handleRemove = async () => {
     try {
       setMsg(''); setErr('');
-      await axios.delete('http://localhost:5000/api/user/profile/picture', {
+      await axios.delete('import.meta.env.VITE_API_URL/api/user/profile/picture', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setPreview(null);

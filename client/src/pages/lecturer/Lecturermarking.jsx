@@ -5,7 +5,7 @@ import API from '../../api/api';
 import './dashboard.css';
 
 const BASE = 'http://localhost:5000';
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'import.meta.env.VITE_API_URL';
 
 function getGrade(pct) {
   if (pct >= 90) return 'A+'; if (pct >= 85) return 'A'; if (pct >= 80) return 'A-';
