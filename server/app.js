@@ -7,7 +7,14 @@ require('dotenv').config();
 const app = express();
 
 // ── Middleware ──────────────────────────────
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://mentora.vercel.app',
+    /\.vercel\.app$/
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -19,8 +26,6 @@ app.use('/submissions', express.static(path.join(__dirname, 'submissions')));
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected!');
-
-    // ── Start deadline reminder service AFTER DB connects ──
     const { startDeadlineReminders } = require('./services/deadlineReminderService');
     startDeadlineReminders();
   })
@@ -42,8 +47,9 @@ app.use('/api/admin',         require('./routes/adminRoutes'));
 
 // ── Health check ────────────────────────────
 app.get('/', (req, res) => res.json({ message: '🚀 Mentora API is running!' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Mentora API is running' }));
 
-// ── Manual trigger for deadline check (for testing) ──────────────────────────
+// ── Manual trigger for deadline check ────────
 app.get('/api/check-deadlines', async (req, res) => {
   try {
     const { checkDeadlines } = require('./services/deadlineReminderService');
