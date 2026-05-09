@@ -10,7 +10,8 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://mentora.vercel.app',
+    'https://dynamic-praline-1a7d1f.netlify.app',
+    /\.netlify\.app$/,
     /\.vercel\.app$/
   ],
   credentials: true
