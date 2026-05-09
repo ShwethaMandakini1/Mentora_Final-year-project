@@ -8,12 +8,9 @@ const app = express();
 
 // ── Middleware ──────────────────────────────
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://dynamic-praline-1a7d1f.netlify.app',
-    /\.netlify\.app$/,
-    /\.vercel\.app$/
-  ],
+  origin: function(origin, callback) {
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
