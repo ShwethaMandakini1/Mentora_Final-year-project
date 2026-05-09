@@ -1,90 +1,49 @@
-const express    = require('express');
-const mongoose   = require('mongoose');
-const cors       = require('cors');
-const path       = require('path');
-require('dotenv').config();
+import axios from 'axios';
 
-const app = express();
+const API = axios.create({ baseURL: import.meta.env.VITE_API_URL });
 
-// ── Middleware ──────────────────────────────
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://dynamic-praline-1a7d1f.netlify.app',
-    /\.netlify\.app$/,
-    /\.vercel\.app$/
-  ],
-  credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ── Static file serving ─────────────────────
-app.use('/uploads',     express.static(path.join(__dirname, 'uploads')));
-app.use('/submissions', express.static(path.join(__dirname, 'submissions')));
-
-// ── MongoDB ─────────────────────────────────
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB Connected!');
-    const { startDeadlineReminders } = require('./services/deadlineReminderService');
-    startDeadlineReminders();
-  })
-  .catch(err => {
-    console.error('❌ MongoDB Connection Error:', err.message);
-    process.exit(1);
-  });
-
-// ── Routes ──────────────────────────────────
-app.use('/api/auth',          require('./routes/authRoutes'));
-app.use('/api/user',          require('./routes/userRoutes'));
-app.use('/api/submissions',   require('./routes/submissionRoutes'));
-app.use('/api/assignments',   require('./routes/assignmentRoutes'));
-app.use('/api/ai',            require('./routes/Airoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/subscription',  require('./routes/subscriptionRoutes'));
-app.use('/api/leaderboard',   require('./routes/leaderboardRoutes'));
-app.use('/api/admin',         require('./routes/adminRoutes'));
-
-// ── Health check ────────────────────────────
-app.get('/', (req, res) => res.json({ message: '🚀 Mentora API is running!' }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Mentora API is running' }));
-
-// ── Manual trigger for deadline check ────────
-app.get('/api/check-deadlines', async (req, res) => {
-  try {
-    const { checkDeadlines } = require('./services/deadlineReminderService');
-    await checkDeadlines();
-    res.json({ success: true, message: 'Deadline check completed!' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem('token');
+  if (token) req.headers.Authorization = `Bearer ${token}`;
+  return req;
 });
 
-// ── ONE-TIME FIX ─────────────────────────────
-app.get('/fix-paths', async (req, res) => {
-  const Submission = require('./models/Submission');
-  const submissions = await Submission.find({});
-  let fixed = 0;
-  for (const sub of submissions) {
-    if (sub.filePath && (sub.filePath.includes('\\') || sub.filePath.includes(':/') || sub.filePath.startsWith('/'))) {
-      const filename = sub.filePath.replace(/\\/g, '/').split('/').pop();
-      sub.filePath = `submissions/${filename}`;
-      await sub.save();
-      fixed++;
-    }
-  }
-  res.json({ message: `✅ Fixed ${fixed} records` });
-});
+// ── AUTH ──────────────────────────────────────────
+export const registerUser   = (data) => API.post('/auth/register', data);
+export const loginUser      = (data) => API.post('/auth/login', data);
+export const forgotPassword = (data) => API.post('/auth/forgot-password', data);
+export const verifyOTP      = (data) => API.post('/auth/verify-otp', data);
+export const resetPassword  = (data) => API.post('/auth/reset-password', data);
+export const getMe          = ()     => API.get('/auth/me');
 
-// ── 404 ─────────────────────────────────────
-app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
+// ── USER ──────────────────────────────────────────
+export const getProfile     = ()     => API.get('/user/profile');
+export const updateProfile  = (data) => API.put('/user/profile', data);
+export const updatePassword = (data) => API.put('/user/update-password', data);
+export const getAllStudents  = ()     => API.get('/user/students');
 
-// ── Error handler ────────────────────────────
-app.use((err, req, res, next) => {
-  console.error('GLOBAL ERROR:', err.stack);
-  res.status(500).json({ success: false, message: err.message || 'Server Error' });
-});
+// ── SUBMISSIONS ───────────────────────────────────
+export const submitAssignment  = (data)      => API.post('/submissions', data);
+export const getMySubmissions  = ()          => API.get('/submissions/my');
+export const getAllSubmissions  = ()          => API.get('/submissions/all');
+export const getSubmission     = (id)        => API.get(`/submissions/${id}`);
+export const gradeSubmission   = (id, data)  => API.put(`/submissions/${id}/grade`, data);
+export const updateSubmission  = (id, data)  => API.put(`/submissions/${id}`, data);
+export const deleteSubmission  = (id)        => API.delete(`/submissions/${id}`);
+export const getDashboardStats = ()          => API.get('/submissions/stats');
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
+// ── ASSIGNMENTS ───────────────────────────────────
+export const getAssignments   = ()         => API.get('/assignments');
+export const getAssignment    = (id)       => API.get(`/assignments/${id}`);
+export const createAssignment = (data)     => API.post('/assignments', data);
+export const updateAssignment = (id, data) => API.put(`/assignments/${id}`, data);
+export const deleteAssignment = (id)       => API.delete(`/assignments/${id}`);
+
+// ── NOTIFICATIONS ─────────────────────────────────
+export const getNotifications         = ()    => API.get('/notifications');
+export const markNotificationRead     = (id)  => API.put(`/notifications/${id}/read`);
+export const markAllNotificationsRead = ()    => API.put('/notifications/read-all');
+export const deleteNotification       = (id)  => API.delete(`/notifications/${id}`);
+export const deleteAllNotifications   = ()    => API.delete('/notifications/all');
+
+export default API;
