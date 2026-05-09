@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import LecturerLayout from './Lecturerlayout';
+import LecturerLayout from './LecturerLayout';
 import API from '../../api/api';
 import './dashboard.css';
 

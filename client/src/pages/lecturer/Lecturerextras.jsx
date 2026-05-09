@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 // Assuming these paths based on the error logs provided
-import LecturerLayout from './Lecturerlayout'; 
+import LecturerLayout from './LecturerLayout'; 
 import { useAuth } from '../../context/AuthContext';
 import { getProfile, updateProfile, updatePassword } from '../../api/api';
 import API from '../../api/api';

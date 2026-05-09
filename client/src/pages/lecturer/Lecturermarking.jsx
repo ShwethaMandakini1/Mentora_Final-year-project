@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import LecturerLayout from './Lecturerlayout';
+import LecturerLayout from './LecturerLayout';
 import { getAllSubmissions, gradeSubmission } from '../../api/api';
 import API from '../../api/api';
 import './dashboard.css';

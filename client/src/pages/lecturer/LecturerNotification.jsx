@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LecturerLayout from './Lecturerlayout';
+import LecturerLayout from './LecturerLayout';
 import { useAuth } from '../../context/AuthContext';
 import {
   getNotifications,
