@@ -5,13 +5,18 @@ const NotificationSchema = new mongoose.Schema({
   type:    {
     type: String,
     enum: [
-      'new_assignment',
-      'marks_received',
-      'regrade_accepted',
-      'deadline_reminder',
-      'approval_requested',
-      'submission_approved',
-      'submission_rejected',
+      // ── Student-facing ──────────────────────────────
+      'marks_received',       // lecturer published marks
+      'regrade_accepted',     // lecturer accepted regrade
+      'submission_approved',  // lecturer approved submission
+      'submission_rejected',  // lecturer rejected submission
+
+      // ── Lecturer-facing ─────────────────────────────
+      'approval_requested',   // student submitted for review
+      'regrade_requested',    // student requested a regrade  ← NEW
+
+      // ── Both (admin → anyone) ───────────────────────
+      'admin_message',        // admin broadcast / targeted message ← NEW
     ],
     required: true,
   },

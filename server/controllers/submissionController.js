@@ -158,8 +158,8 @@ exports.gradeSubmission = async (req, res) => {
     ).populate('student', 'username email');
 
     if (published && !wasAlreadyPublished && sub.student?._id) {
-      const scoreText  = score != null ? `You scored ${score}%` : '';
-      const gradeText  = grade         ? ` (${grade})`          : '';
+      const scoreText = score != null ? `You scored ${score}%` : '';
+      const gradeText = grade         ? ` (${grade})`          : '';
       await createNotification({
         userId:  sub.student._id,
         type:    'marks_received',
@@ -407,14 +407,14 @@ exports.submitForApproval = async (req, res) => {
 
     console.log('✅ Submission created:', sub._id);
 
-    // Notify lecturers — wrapped so it never breaks the main flow
+    // Notify lecturers
     try {
       const lecturers = await User.find({ role: 'lecturer' });
       for (const lecturer of lecturers) {
         await createNotification({
           userId:  lecturer._id,
           type:    'approval_requested',
-          title:   '📋 New Assignment Pending Review',
+          title:   'New Assignment Pending Review',
           message: `A student submitted "${sub.assignmentName}" for your review.`,
           meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
         });
@@ -480,7 +480,7 @@ exports.approveSubmission = async (req, res) => {
       await createNotification({
         userId:  sub.student._id,
         type:    'submission_approved',
-        title:   '✅ Assignment Approved!',
+        title:   'Assignment Approved!',
         message: `Your assignment "${sub.assignmentName}" has been approved and officially submitted to Mentora.`,
         meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
       });
@@ -517,7 +517,7 @@ exports.rejectSubmission = async (req, res) => {
       await createNotification({
         userId:  sub.student._id,
         type:    'submission_rejected',
-        title:   '❌ Assignment Needs Revision',
+        title:   'Assignment Needs Revision',
         message: `Your assignment "${sub.assignmentName}" was not approved. Reason: ${feedback || 'Please revise and resubmit.'}`,
         meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, feedback },
       });
@@ -528,6 +528,57 @@ exports.rejectSubmission = async (req, res) => {
     res.json({ success: true, submission: sub });
   } catch (err) {
     console.error('REJECT ERROR:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── REQUEST regrade (student) ─────────────────────────────────────────────────
+exports.requestRegrade = async (req, res) => {
+  try {
+    const { reason } = req.body;
+
+    const sub = await Submission.findById(req.params.id)
+      .populate('student', 'username email studentId');
+    if (!sub)
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+
+    // Only the owning student may request a regrade
+    if (sub.student._id.toString() !== req.user._id.toString())
+      return res.status(401).json({ success: false, message: 'Not authorised' });
+
+    await Submission.findByIdAndUpdate(req.params.id, {
+      regrade: {
+        status:      'pending',
+        reason:      reason || '',
+        requestedAt: new Date(),
+      },
+    });
+
+    // Notify all lecturers
+    try {
+      const lecturers = await User.find({ role: 'lecturer' });
+      for (const lecturer of lecturers) {
+        await createNotification({
+          userId:  lecturer._id,
+          type:    'regrade_requested',
+          title:   'Re-grade Request',
+          message: `${sub.student.username || 'A student'} requested a re-grade for "${sub.assignmentName}"${sub.moduleCode ? ` (${sub.moduleCode})` : ''}.${reason ? ` Reason: ${reason}` : ''}`,
+          meta: {
+            submissionId:   sub._id,
+            assignmentName: sub.assignmentName,
+            moduleCode:     sub.moduleCode,
+            studentName:    sub.student.username,
+            reason,
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Regrade notification error (non-fatal):', notifErr.message);
+    }
+
+    res.json({ success: true, message: 'Re-grade request submitted.' });
+  } catch (err) {
+    console.error('REQUEST REGRADE ERROR:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };
