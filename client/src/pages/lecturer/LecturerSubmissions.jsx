@@ -4,7 +4,7 @@ import axios from 'axios';
 import './dashboard.css';
 
 const API = 'import.meta.env.VITE_API_URL';
-const BASE = 'http://localhost:5000';
+const BASE = 'import.meta.env.VITE_API_URL';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function buildFileUrl(filePath) {
