@@ -1,9 +1,9 @@
-const express = require('express');
-const router  = express.Router();
+const express     = require('express');
+const router      = express.Router();
+const aiCtrl      = require('../controllers/aiController');
 const { protect } = require('../middleware/auth');
-const { getAIInsights, generateMarkingFeedback } = require('../controllers/Aicontroller');
 
-router.post('/insights',          protect, getAIInsights);
-router.post('/marking-feedback',  protect, generateMarkingFeedback);  // ← NEW
+// POST /api/ai/insights
+router.post('/insights', protect, aiCtrl.getInsights);
 
 module.exports = router;

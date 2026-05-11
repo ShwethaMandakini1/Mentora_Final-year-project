@@ -56,21 +56,40 @@ const SubmissionSchema = new mongoose.Schema({
   fileName:         { type: String, required: true },
   filePath:         { type: String, required: true },
   fileType:         { type: String },
-  status:           { type: String, enum: ['Pending', 'Graded', 'Rejected'], default: 'Pending' },
-  grade:            { type: String, default: '' },
-  score:            { type: Number, default: 0 },
-  feedback:         { type: String, default: '' },
-  rubricScores:     [RubricScoreSchema],
-  corrections:      [CorrectionSchema],
-  aiAnalysis:       { type: AIAnalysisSchema, default: () => ({ status: 'pending' }) },
+
+  // ── Grading fields ────────────────────────────────────────────────────────
+  status:       { type: String, enum: ['Pending', 'Graded', 'Rejected'], default: 'Pending' },
+  grade:        { type: String, default: '' },
+  score:        { type: Number, default: 0 },
+  feedback:     { type: String, default: '' },
+  rubricScores: [RubricScoreSchema],
+  corrections:  [CorrectionSchema],
+
+  // ── FIX: published tracks whether marks have been released to student ──────
+  // published: false = saved draft (scores stored, not visible to student yet)
+  // published: true  = marks released, status = 'Graded', student notified
+  // Once published = true it cannot be reversed
+  published: { type: Boolean, default: false },
+
+  // ── AI Analysis ───────────────────────────────────────────────────────────
+  aiAnalysis: { type: AIAnalysisSchema, default: () => ({ status: 'pending' }) },
+
   // ── Pre-Approval fields ───────────────────────────────────────────────────
   approvalStatus:   { type: String, enum: ['draft', 'pending_review', 'approved', 'rejected'], default: 'draft' },
   approvalFeedback: { type: String, default: '' },
   approvedAt:       { type: Date },
   rejectedAt:       { type: Date },
-  // ─────────────────────────────────────────────────────────────────────────
-  submittedAt:      { type: Date, default: Date.now },
-  gradedAt:         { type: Date },
+
+  // ── Regrade fields ────────────────────────────────────────────────────────
+  regrade: {
+    status:      { type: String, enum: ['pending', 'accepted', 'rejected'], default: undefined },
+    reason:      { type: String },
+    requestedAt: { type: Date },
+    reviewedAt:  { type: Date },
+  },
+
+  submittedAt: { type: Date, default: Date.now },
+  gradedAt:    { type: Date },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Submission', SubmissionSchema);

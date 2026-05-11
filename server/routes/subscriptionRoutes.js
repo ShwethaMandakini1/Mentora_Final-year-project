@@ -6,11 +6,13 @@ const {
   upgradePlan,
   cancelSubscription,
   getPlans,
+  checkLimit,
 } = require('../controllers/subscriptionController');
 
-router.get('/plans',   getPlans);
-router.get('/',        protect, getSubscription);
-router.post('/upgrade', protect, upgradePlan);
-router.post('/cancel',  protect, cancelSubscription);
+router.get('/plans',        getPlans);
+router.get('/',             protect, getSubscription);
+router.get('/check-limit',  protect, checkLimit);
+router.post('/upgrade',     protect, upgradePlan);
+router.post('/cancel',      protect, cancelSubscription);
 
 module.exports = router;

@@ -2,151 +2,148 @@ const Submission = require('../models/Submission');
 const User       = require('../models/User');
 
 // ── Badge definitions ─────────────────────────────────────────────────────────
-const BADGES = [
+const BADGE_DEFINITIONS = [
   {
     id:          'first_submission',
     name:        'First Step',
-    description: 'Submitted your first assignment',
     icon:        '🎯',
-    color:       '#2563eb',
-    bg:          '#eff6ff',
-    check:       (subs) => subs.length >= 1,
+    description: 'Submit your first assignment',
+    color:       '#0096C7',
+    bg:          '#E0F2FE',
+    check:       (stats) => stats.totalSubmissions >= 1,
+  },
+  {
+    id:          'five_submissions',
+    name:        'Getting Started',
+    icon:        '📚',
+    description: 'Submit 5 assignments',
+    color:       '#7c3aed',
+    bg:          '#f3e8ff',
+    check:       (stats) => stats.totalSubmissions >= 5,
+  },
+  {
+    id:          'ten_submissions',
+    name:        'Dedicated',
+    icon:        '🏆',
+    description: 'Submit 10 assignments',
+    color:       '#d97706',
+    bg:          '#fef3c7',
+    check:       (stats) => stats.totalSubmissions >= 10,
   },
   {
     id:          'high_achiever',
     name:        'High Achiever',
-    description: 'Scored 90% or above on an assignment',
     icon:        '⭐',
-    color:       '#d97706',
-    bg:          '#fef3c7',
-    check:       (subs) => subs.some(s => (s.score || 0) >= 90),
+    description: 'Achieve an average score of 80% or above',
+    color:       '#16a34a',
+    bg:          '#dcfce7',
+    check:       (stats) => stats.average >= 80 && stats.gradedCount >= 1,
   },
   {
     id:          'perfect_score',
-    name:        'Perfect Score',
-    description: 'Achieved 100% on an assignment',
-    icon:        '💎',
-    color:       '#7c3aed',
-    bg:          '#f5f3ff',
-    check:       (subs) => subs.some(s => (s.score || 0) >= 100),
-  },
-  {
-    id:          'consistent_learner',
-    name:        'Consistent Learner',
-    description: 'Submitted 5 or more assignments',
-    icon:        '📚',
-    color:       '#16a34a',
-    bg:          '#dcfce7',
-    check:       (subs) => subs.length >= 5,
-  },
-  {
-    id:          'dedicated_student',
-    name:        'Dedicated Student',
-    description: 'Submitted 10 or more assignments',
-    icon:        '🏆',
+    name:        'Perfectionist',
+    icon:        '💯',
+    description: 'Score 100% on any assignment',
     color:       '#dc2626',
-    bg:          '#fef2f2',
-    check:       (subs) => subs.length >= 10,
+    bg:          '#fee2e2',
+    check:       (stats) => stats.maxScore >= 100,
   },
   {
-    id:          'above_average',
-    name:        'Above Average',
-    description: 'Maintained an average score above 75%',
-    icon:        '📈',
-    color:       '#0891b2',
-    bg:          '#ecfeff',
-    check:       (subs) => {
-      const graded = subs.filter(s => s.status === 'Graded');
-      if (graded.length < 2) return false;
-      const avg = graded.reduce((a, s) => a + (s.score || 0), 0) / graded.length;
-      return avg >= 75;
-    },
+    id:          'consistent',
+    name:        'Consistent',
+    icon:        '🎖️',
+    description: 'Score above 70% on 3 or more assignments',
+    color:       '#0369a1',
+    bg:          '#e0f2fe',
+    check:       (stats) => stats.above70Count >= 3,
   },
   {
-    id:          'multi_module',
-    name:        'Well Rounded',
-    description: 'Submitted assignments in 3 or more modules',
-    icon:        '🌟',
-    color:       '#be185d',
-    bg:          '#fdf2f8',
-    check:       (subs) => new Set(subs.map(s => s.moduleCode).filter(Boolean)).size >= 3,
+    id:          'top_10',
+    name:        'Top 10',
+    icon:        '🥇',
+    description: 'Reach the top 10 on the leaderboard',
+    color:       '#d97706',
+    bg:          '#fef3c7',
+    check:       (stats) => stats.rank > 0 && stats.rank <= 10,
   },
   {
-    id:          'approved_master',
-    name:        'Approved Master',
-    description: 'Got 3 or more pre-approvals accepted',
-    icon:        '✅',
-    color:       '#16a34a',
-    bg:          '#dcfce7',
-    check:       (subs) => subs.filter(s => s.approvalStatus === 'approved').length >= 3,
+    id:          'top_3',
+    name:        'Podium',
+    icon:        '🏅',
+    description: 'Reach the top 3 on the leaderboard',
+    color:       '#b45309',
+    bg:          '#fef9c3',
+    check:       (stats) => stats.rank > 0 && stats.rank <= 3,
   },
 ];
 
-// ── Helper: calculate score for leaderboard ranking ───────────────────────────
-const calcScore = (subs) => {
-  const graded = subs.filter(s => s.status === 'Graded');
-  if (graded.length === 0) return 0;
-  const avg      = graded.reduce((a, s) => a + (s.score || 0), 0) / graded.length;
-  const bonus    = subs.length * 2; // bonus points for number of submissions
-  return Math.round(avg + bonus);
+// ── Build leaderboard entry for a student ────────────────────────────────────
+const buildStudentStats = (userId, username, studentId, submissions) => {
+  const graded = submissions.filter(s =>
+    s.student?.toString() === userId?.toString() &&
+    s.status === 'Graded' &&
+    s.published === true
+  );
+
+  const totalSubmissions = submissions.filter(
+    s => s.student?.toString() === userId?.toString()
+  ).length;
+
+  const scores    = graded.map(s => Number(s.score) || 0);
+  const average   = scores.length > 0
+    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    : 0;
+  const maxScore  = scores.length > 0 ? Math.max(...scores) : 0;
+
+  // Score = weighted: 60% average + 40% total graded (capped at 20 subs → 100)
+  const submissionBonus = Math.min(graded.length * 5, 40);
+  const score           = Math.round(average * 0.6 + submissionBonus);
+
+  const above70Count = scores.filter(s => s >= 70).length;
+
+  return {
+    userId,
+    username,
+    studentId,
+    submissions:  totalSubmissions,
+    gradedCount:  graded.length,
+    average,
+    score,
+    maxScore,
+    above70Count,
+    rank: 0,   // filled in after sorting
+  };
 };
 
 // ── GET leaderboard ───────────────────────────────────────────────────────────
 exports.getLeaderboard = async (req, res) => {
   try {
     // Get all students
-    const students = await User.find({ role: 'student' }).select('username studentId degree');
+    const students    = await User.find({ role: 'student' }).select('username studentId _id');
+    // Get all graded+published submissions
+    const submissions = await Submission.find({ status: 'Graded', published: true }).lean();
 
-    // Get all graded submissions
-    const allSubs = await Submission.find({ status: 'Graded' })
-      .select('student score grade moduleCode assignmentName status approvalStatus submittedAt');
+    const entries = students
+      .map(s => buildStudentStats(s._id, s.username, s.studentId, submissions))
+      .filter(e => e.gradedCount > 0)   // Only students with at least 1 graded submission
+      .sort((a, b) => b.score - a.score || b.average - a.average);
 
-    // Group by student
-    const studentMap = {};
-    students.forEach(s => {
-      studentMap[s._id.toString()] = {
-        _id:       s._id,
-        username:  s.username,
-        studentId: s.studentId || '—',
-        degree:    s.degree    || '—',
-        subs:      [],
-      };
-    });
+    // Assign ranks
+    entries.forEach((e, i) => { e.rank = i + 1; });
 
-    allSubs.forEach(sub => {
-      const id = sub.student?.toString();
-      if (studentMap[id]) studentMap[id].subs.push(sub);
-    });
-
-    // Build leaderboard
-    const leaderboard = Object.values(studentMap)
-      .map(s => {
-        const graded = s.subs.filter(sub => sub.status === 'Graded');
-        const avg    = graded.length > 0
-          ? Math.round(graded.reduce((a, sub) => a + (sub.score || 0), 0) / graded.length)
-          : 0;
-        const badges = BADGES.filter(b => b.check(s.subs)).map(b => ({
-          id: b.id, name: b.name, icon: b.icon, color: b.color, bg: b.bg,
-        }));
-        return {
-          _id:         s._id,
-          username:    s.username,
-          studentId:   s.studentId,
-          degree:      s.degree,
-          score:       calcScore(s.subs),
-          average:     avg,
-          submissions: s.subs.length,
-          graded:      graded.length,
-          badges,
-          badgeCount:  badges.length,
-        };
-      })
-      .filter(s => s.submissions > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20); // top 20
-
-    // Add rank
-    leaderboard.forEach((s, i) => { s.rank = i + 1; });
+    // Attach badges (top-level icons only for the table)
+    const leaderboard = entries.map(e => ({
+      _id:         e.userId,
+      username:    e.username,
+      studentId:   e.studentId,
+      rank:        e.rank,
+      score:       e.score,
+      average:     e.average,
+      submissions: e.submissions,
+      badges:      BADGE_DEFINITIONS
+        .filter(b => b.check(e))
+        .map(b => ({ id: b.id, name: b.name, icon: b.icon })),
+    }));
 
     res.json({ success: true, leaderboard });
   } catch (err) {
@@ -158,42 +155,31 @@ exports.getLeaderboard = async (req, res) => {
 // ── GET my badges ─────────────────────────────────────────────────────────────
 exports.getMyBadges = async (req, res) => {
   try {
-    const subs = await Submission.find({ student: req.user._id });
+    const submissions = await Submission.find({ status: 'Graded', published: true }).lean();
+    const allStudents = await User.find({ role: 'student' }).select('username studentId _id');
+    const me          = allStudents.find(s => s._id.toString() === req.user._id.toString());
 
-    const earned = BADGES.filter(b => b.check(subs)).map(b => ({
-      id: b.id, name: b.name, description: b.description,
-      icon: b.icon, color: b.color, bg: b.bg, earned: true,
-    }));
+    if (!me) return res.status(404).json({ success: false, message: 'Student not found' });
 
-    const locked = BADGES.filter(b => !b.check(subs)).map(b => ({
-      id: b.id, name: b.name, description: b.description,
-      icon: b.icon, color: '#9ca3af', bg: '#f3f4f6', earned: false,
-    }));
+    // Build all entries to determine rank
+    const entries = allStudents
+      .map(s => buildStudentStats(s._id, s.username, s.studentId, submissions))
+      .filter(e => e.gradedCount > 0)
+      .sort((a, b) => b.score - a.score || b.average - a.average);
+    entries.forEach((e, i) => { e.rank = i + 1; });
 
-    // My rank
-    const students  = await User.find({ role: 'student' }).select('_id');
-    const allSubs   = await Submission.find({ status: 'Graded' }).select('student score status');
-    const scoreMap  = {};
-    students.forEach(s => { scoreMap[s._id.toString()] = []; });
-    allSubs.forEach(sub => {
-      const id = sub.student?.toString();
-      if (scoreMap[id] !== undefined) scoreMap[id].push(sub);
-    });
+    const myStats = entries.find(e => e.userId.toString() === req.user._id.toString())
+      || buildStudentStats(me._id, me.username, me.studentId, []);
 
-    const scores = Object.entries(scoreMap)
-      .map(([id, s]) => ({ id, score: calcScore(s) }))
-      .filter(s => s.score > 0)
-      .sort((a, b) => b.score - a.score);
-
-    const myRank = scores.findIndex(s => s.id === req.user._id.toString()) + 1;
+    const earned = BADGE_DEFINITIONS.filter(b => b.check(myStats));
+    const locked = BADGE_DEFINITIONS.filter(b => !b.check(myStats));
 
     res.json({
-      success: true,
-      earned,
-      locked,
-      myRank:      myRank || null,
-      totalRanked: scores.length,
-      totalBadges: BADGES.length,
+      success:     true,
+      earned:      earned.map(b => ({ id: b.id, name: b.name, icon: b.icon, description: b.description, color: b.color, bg: b.bg })),
+      locked:      locked.map(b => ({ id: b.id, name: b.name, icon: b.icon, description: b.description, color: b.color, bg: b.bg })),
+      myRank:      myStats.rank || null,
+      totalRanked: entries.length,
     });
   } catch (err) {
     console.error('BADGES ERROR:', err.message);
