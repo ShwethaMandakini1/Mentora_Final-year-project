@@ -26,7 +26,6 @@ const RubricBreakdownSchema = new mongoose.Schema({
   comment:   { type: String },
 }, { _id: false });
 
-// ── AI Analysis Schema ────────────────────────────────────────────────────────
 const AIAnalysisSchema = new mongoose.Schema({
   status:          { type: String, enum: ['pending', 'done', 'failed'], default: 'pending' },
   message:         { type: String },
@@ -40,16 +39,15 @@ const AIAnalysisSchema = new mongoose.Schema({
   analysedAt:      { type: Date, default: Date.now },
 }, { _id: false });
 
-// ── Correction Schema ─────────────────────────────────────────────────────────
 const CorrectionSchema = new mongoose.Schema({
   note:    { type: String },
   addedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
-// ── Main Submission Schema ────────────────────────────────────────────────────
 const SubmissionSchema = new mongoose.Schema({
   student:          { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   lecturer:         { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  assignment:       { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment' },
   moduleCode:       { type: String, required: true },
   moduleName:       { type: String, required: true },
   assignmentName:   { type: String, required: true },
@@ -57,30 +55,23 @@ const SubmissionSchema = new mongoose.Schema({
   filePath:         { type: String, required: true },
   fileType:         { type: String },
 
-  // ── Grading fields ────────────────────────────────────────────────────────
+  // Actual final grading fields — only used by Marking & Feedback
   status:       { type: String, enum: ['Pending', 'Graded', 'Rejected'], default: 'Pending' },
   grade:        { type: String, default: '' },
   score:        { type: Number, default: 0 },
   feedback:     { type: String, default: '' },
   rubricScores: [RubricScoreSchema],
   corrections:  [CorrectionSchema],
+  published:    { type: Boolean, default: false },
 
-  // ── FIX: published tracks whether marks have been released to student ──────
-  // published: false = saved draft (scores stored, not visible to student yet)
-  // published: true  = marks released, status = 'Graded', student notified
-  // Once published = true it cannot be reversed
-  published: { type: Boolean, default: false },
-
-  // ── AI Analysis ───────────────────────────────────────────────────────────
   aiAnalysis: { type: AIAnalysisSchema, default: () => ({ status: 'pending' }) },
 
-  // ── Pre-Approval fields ───────────────────────────────────────────────────
+  // Pre-approval fields — only draft review decision/comment
   approvalStatus:   { type: String, enum: ['draft', 'pending_review', 'approved', 'rejected'], default: 'draft' },
   approvalFeedback: { type: String, default: '' },
   approvedAt:       { type: Date },
   rejectedAt:       { type: Date },
 
-  // ── Regrade fields ────────────────────────────────────────────────────────
   regrade: {
     status:      { type: String, enum: ['pending', 'accepted', 'rejected'], default: undefined },
     reason:      { type: String },

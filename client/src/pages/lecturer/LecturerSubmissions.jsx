@@ -443,49 +443,6 @@ function GradeModal({ submission, onClose, onSaved }) {
   const [error,       setError]       = useState('');
   const [viewerOpen,  setViewerOpen]  = useState(false);
 
-  // Rubric scores come from existing saved marks first.
-  // If no marks are saved yet, use the assignment rubric criteria.
-  const [rubricScores, setRubricScores] = useState(() => {
-    const saved = Array.isArray(submission.rubricScores) ? submission.rubricScores : [];
-    const assignmentRubric = Array.isArray(submission.assignmentRubric) ? submission.assignmentRubric : [];
-
-    if (saved.length > 0) {
-      return saved.map((r) => ({
-        criterion: r.criterion || '',
-        score: Number(r.score) || 0,
-        maxScore: Number(r.maxScore) || 0,
-        percentage: r.maxScore > 0 ? Math.round((Number(r.score) / Number(r.maxScore)) * 100) : 0,
-      }));
-    }
-
-    return assignmentRubric.map((r) => ({
-      criterion: r.criterion || r.title || '',
-      score: 0,
-      maxScore: Number(r.maxScore) || Number(r.marks) || 0,
-      percentage: 0,
-    }));
-  });
-
-  const updateRubricScore = (index, value) => {
-    setRubricScores((prev) => {
-      const next = [...prev];
-      const raw = Number(value);
-      const max = Number(next[index]?.maxScore) || 0;
-      const scoreValue = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(raw, max || raw));
-
-      next[index] = {
-        ...next[index],
-        score: scoreValue,
-        percentage: max > 0 ? Math.round((scoreValue / max) * 100) : 0,
-      };
-
-      return next;
-    });
-  };
-
-  const rubricTotal = rubricScores.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
-  const rubricMax = rubricScores.reduce((sum, r) => sum + (Number(r.maxScore) || 0), 0);
-
   const studentName = submission.student?.username || submission.student?.email || '—';
 
   const addCorrection = () => {
@@ -500,27 +457,9 @@ function GradeModal({ submission, onClose, onSaved }) {
     setAction(publish ? 'publish' : 'draft'); setSaving(true); setError('');
     try {
       const token = localStorage.getItem('token');
-      const cleanedRubricScores = rubricScores
-        .filter((r) => r.criterion || Number(r.maxScore) > 0)
-        .map((r) => ({
-          criterion: r.criterion || '',
-          score: Number(r.score) || 0,
-          maxScore: Number(r.maxScore) || 0,
-          percentage: Number(r.maxScore) > 0
-            ? Math.round(((Number(r.score) || 0) / Number(r.maxScore)) * 100)
-            : 0,
-        }));
-
       await axios.put(
         `${API}/submissions/${submission._id}/grade`,
-        {
-          score: Number(score) || 0,
-          grade,
-          feedback,
-          corrections,
-          rubricScores: cleanedRubricScores,
-          ...(publish && { published: true }),
-        },
+        { score: Number(score) || 0, grade, feedback, corrections, ...(publish && { published: true }) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onSaved();
@@ -573,69 +512,6 @@ function GradeModal({ submission, onClose, onSaved }) {
                 </select>
               </div>
             </div>
-
-            {/* Rubric Criteria Marks */}
-            {rubricScores.length > 0 && (
-              <div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                  <label className="ultra-label" style={{ margin:0 }}>Rubric Criteria Marks</label>
-                  <span style={{ background:'#f0fdf4', color:'#166534', padding:'5px 12px', borderRadius:20, fontWeight:800, fontSize:12 }}>
-                    Total: {rubricTotal}/{rubricMax || '—'}
-                  </span>
-                </div>
-
-                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {rubricScores.map((r, i) => {
-                    const max = Number(r.maxScore) || 0;
-                    const value = Number(r.score) || 0;
-                    const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-                    const color = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
-
-                    return (
-                      <div
-                        key={i}
-                        style={{
-                          background:'#f8fafc',
-                          border:'1px solid #e2e8f0',
-                          borderRadius:14,
-                          padding:14,
-                        }}
-                      >
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 110px', gap:12, alignItems:'center' }}>
-                          <div>
-                            <div style={{ fontWeight:800, color:'#0f172a', fontSize:13 }}>
-                              {r.criterion || `Criterion ${i + 1}`}
-                            </div>
-                            <div style={{ marginTop:8, height:6, background:'#e2e8f0', borderRadius:99, overflow:'hidden' }}>
-                              <div style={{ width:`${pct}%`, height:'100%', background:color, borderRadius:99 }} />
-                            </div>
-                          </div>
-
-                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                            <input
-                              className="ultra-input"
-                              type="number"
-                              min="0"
-                              max={max || undefined}
-                              value={r.score}
-                              onChange={(e) => updateRubricScore(i, e.target.value)}
-                              style={{ padding:'9px 10px', textAlign:'center', fontWeight:800 }}
-                            />
-                            <span style={{ color:'#64748b', fontSize:13, fontWeight:700 }}>
-                              /{max}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ marginTop:10, fontSize:12, color:'#64748b' }}>
-                  These criterion marks will appear in the student's report page after saving or publishing.
-                </div>
-              </div>
-            )}
 
             {/* Feedback */}
             <div>
@@ -1117,7 +993,7 @@ function RegradeRequestsTab() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MARK & FEEDBACK TAB
-// Shows submissions with approvalStatus 'approved' OR 'draft' (regular submits)
+// Shows only actual final submissions; pre-approval drafts are excluded
 // Button rules:
 //   published === true  → "View Marks"   → ViewMarksModal (read-only, locked)
 //   Graded & !published → "Edit Marking" → navigate('/lecturer/marking')

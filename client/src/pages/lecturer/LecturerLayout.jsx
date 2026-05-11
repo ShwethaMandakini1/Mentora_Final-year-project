@@ -10,14 +10,13 @@ export default function LecturerLayout({ children }) {
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Poll for unread notifications every 30s
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await getNotifications();
+        const res   = await getNotifications();
         const count = (res.data.notifications || []).filter(n => !n.read).length;
         setUnreadCount(count);
-      } catch { }
+      } catch {}
     };
     fetch();
     const interval = setInterval(fetch, 30000);
@@ -27,66 +26,67 @@ export default function LecturerLayout({ children }) {
   const navItems = [
     {
       label: 'Dashboard',
-      path: '/lecturer/dashboard',
+      path:  '/lecturer/dashboard',
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
-          <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="12" y="3" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="3" y="12" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="3"  y="3"  width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="12" y="3"  width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="3"  y="12" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
           <rect x="12" y="12" width="7" height="7" rx="2" stroke="currentColor" strokeWidth="1.6" />
         </svg>
-      )
+      ),
     },
     {
       label: 'Submissions',
-      path: '/lecturer/submissions',
+      path:  '/lecturer/submissions',
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
           <path d="M14 3v4a1 1 0 001 1h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M14.5 3H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7.5L14.5 3z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M8 13h6M8 17h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
-      )
+      ),
     },
     {
-      label: 'Regarding Request',
-      path: '/lecturer/requests',
+      // FIX: renamed from "Regarding Request" → "Pre-Approvals"
+      label: 'Pre-Approvals',
+      path:  '/lecturer/requests',
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
           <path d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           <rect x="8" y="2" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.6" />
           <path d="M7 10h8M7 14h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
-      )
+      ),
     },
     {
       label: 'Report & Analytics',
-      path: '/lecturer/analytics',
+      path:  '/lecturer/analytics',
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
           <path d="M4 18h14M6 14v4M11 8v10M16 11v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      )
+      ),
     },
     {
       label: 'Marking & Feedback',
-      path: '/lecturer/marking',
+      path:  '/lecturer/marking',
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
           <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      )
+      ),
     },
     {
       label: 'Notifications',
-      path: '/lecturer/notifications',
+      path:  '/lecturer/notifications',
       badge: unreadCount,
       icon: (
         <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
           <path d="M18 15h-1.2a2 2 0 01-1.9-1.4l-1-3.1A4.2 4.2 0 0010 7v0a4.2 4.2 0 00-3.9 3.5l-1 3.1a2 2 0 01-1.9 1.4H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M12 19a2 2 0 01-4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      )
+      ),
     },
   ];
 
@@ -94,7 +94,6 @@ export default function LecturerLayout({ children }) {
     <div className="ios-layout-wrapper">
       <aside className="ios-sidebar">
 
-        {/* ── Brand Logo & Tagline ── */}
         <div
           className="ios-sidebar-header ios-sidebar-header--clickable"
           onClick={() => navigate('/lecturer/dashboard')}
@@ -111,7 +110,6 @@ export default function LecturerLayout({ children }) {
           </div>
         </div>
 
-        {/* ── Navigation Menu ── */}
         <nav className="ios-sidebar-nav">
           <p className="ios-nav-group-label">Main Menu</p>
 
@@ -124,18 +122,13 @@ export default function LecturerLayout({ children }) {
             >
               {item.icon}
               <span className="ios-sidebar-label">{item.label}</span>
-
-              {/* Notification Badge */}
               {item.badge > 0 && (
-                <span className="ios-nav-badge">
-                  {item.badge}
-                </span>
+                <span className="ios-nav-badge">{item.badge}</span>
               )}
             </div>
           ))}
         </nav>
 
-        {/* ── Bottom Section (Profile & Logout) ── */}
         <div className="ios-sidebar-footer">
           <div
             className={`ios-sidebar-link ${location.pathname === '/lecturer/profile' ? 'ios-sidebar-link--active' : ''}`}
@@ -151,10 +144,7 @@ export default function LecturerLayout({ children }) {
 
           <button
             className="ios-sidebar-logout"
-            onClick={() => {
-              logout();
-              window.location.href = '/signin?role=lecturer';
-            }}
+            onClick={() => { logout(); window.location.href = '/signin?role=lecturer'; }}
           >
             <svg viewBox="0 0 22 22" fill="none" className="ios-sidebar-icon">
               <path d="M8 11h9M13 7l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

@@ -296,12 +296,27 @@ export default function LecturerMarking() {
       const r    = await getAllSubmissions();
       const subs = r.data.submissions || [];
 
-      // Only show submissions approved from the pre-approval queue
-      // Include Graded so lecturer can re-open and edit if needed
-      const approvedSubs = subs.filter(s => s.approvalStatus === 'approved');
+      // FINAL CORRECT FLOW:
+      // Marking & Feedback shows ONLY actual final submissions that still need final marking.
+      // It must NOT show:
+      //   - pre-approval drafts: pending_review / approved / rejected
+      //   - already published final marks: published === true
+      // After lecturer clicks "Publish to Student", this page becomes empty until a new final submission is uploaded.
+      const actualFinalSubs = subs.filter((s) => {
+        const approvalStatus = s.approvalStatus || 'draft';
+        const isActualFinalSubmission = approvalStatus === 'draft';
+        const isAlreadyPublished = s.published === true;
 
-      setSubmissions(approvedSubs);
-      return approvedSubs; // ✅ single return
+        return isActualFinalSubmission && !isAlreadyPublished;
+      });
+
+      setSubmissions(actualFinalSubs);
+
+      if (actualFinalSubs.length === 0) {
+        setSelected(null);
+      }
+
+      return actualFinalSubs; // ✅ single return
     } catch {
       return [];
     } finally {
@@ -311,7 +326,11 @@ export default function LecturerMarking() {
 
   useEffect(() => {
     fetchSubs().then(subs => {
-      if (subs.length > 0) initSub(subs[0]);
+      if (subs.length > 0) {
+        initSub(subs[0]);
+      } else {
+        setSelected(null);
+      }
     });
   }, []);
 
@@ -495,13 +514,21 @@ export default function LecturerMarking() {
         score: finalPct, grade: finalGrade, feedback, rubricScores,
         ...(publish && { published: true }),
       });
-      setSubmissions(prev => prev.map(s =>
-        s._id === selected._id
-          ? { ...s, score: finalPct, grade: finalGrade, status: 'Graded', feedback, rubricScores }
-          : s
-      ));
-      setSelected(prev => ({ ...prev, score: finalPct, grade: finalGrade, status: 'Graded', feedback }));
-      setMsg({ text: publish ? 'Marks published to student!' : 'Saved successfully!', type: 'success' });
+      if (publish) {
+        // Once final marks are published, remove it from Marking & Feedback.
+        // This page should only contain items still waiting for final marking.
+        setSubmissions(prev => prev.filter(s => s._id !== selected._id));
+        setSelected(null);
+        setMsg({ text: 'Marks published to student! This item has been removed from the marking queue.', type: 'success' });
+      } else {
+        setSubmissions(prev => prev.map(s =>
+          s._id === selected._id
+            ? { ...s, score: finalPct, grade: finalGrade, status: 'Graded', feedback, rubricScores, published: false }
+            : s
+        ));
+        setSelected(prev => ({ ...prev, score: finalPct, grade: finalGrade, status: 'Graded', feedback, published: false }));
+        setMsg({ text: 'Saved successfully!', type: 'success' });
+      }
     } catch (e) {
       setMsg({ text: e.response?.data?.message || 'Save failed.', type: 'error' });
     }
@@ -540,7 +567,7 @@ export default function LecturerMarking() {
         ) : submissions.length === 0 ? (
           <div className="ios-empty-state" style={{ marginTop: 40 }}>
             <Icons.Document />
-            <p>No approved submissions found.<br /><span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Approve submissions from the Pre-Approval Requests tab first.</span></p>
+            <p>No submissions waiting for marking.<br /><span style={{ fontSize: 13, color: 'var(--text-muted)' }}>This page will stay empty until a student uploads a submission.</span></p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
