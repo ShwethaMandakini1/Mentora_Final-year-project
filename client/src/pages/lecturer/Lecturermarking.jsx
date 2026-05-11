@@ -5,12 +5,12 @@ import API from '../../api/api';
 import './dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
-const BASE = import.meta.env.VITE_API_URL.replace('/api', '');
+const BASE    = import.meta.env.VITE_API_URL.replace('/api', '');
 
 function getGrade(pct) {
-  if (pct >= 90) return 'A+'; if (pct >= 85) return 'A'; if (pct >= 80) return 'A-';
-  if (pct >= 75) return 'B+'; if (pct >= 70) return 'B'; if (pct >= 65) return 'B-';
-  if (pct >= 60) return 'C+'; if (pct >= 55) return 'C'; return 'F';
+  if (pct >= 90) return 'A+'; if (pct >= 85) return 'A';  if (pct >= 80) return 'A-';
+  if (pct >= 75) return 'B+'; if (pct >= 70) return 'B';  if (pct >= 65) return 'B-';
+  if (pct >= 60) return 'C+'; if (pct >= 55) return 'C';  return 'F';
 }
 
 function gradeColor(g) {
@@ -25,9 +25,8 @@ function buildFileUrl(fp) {
   if (!fp) return null;
   let c = fp.replace(/\\/g, '/');
   if (c.startsWith('http')) return c;
-  if (c.includes(':/') || c.includes('/submissions/')) {
+  if (c.includes(':/') || c.includes('/submissions/'))
     return `${BASE}/submissions/${c.split('/submissions/').pop()}`;
-  }
   return `${BASE}/${c.replace(/^\//, '')}`;
 }
 
@@ -39,16 +38,16 @@ function getExt(fp) {
 // Icons
 // ─────────────────────────────────────────────────────────────────────────────
 const Icons = {
-  Sparkle:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" /></svg>,
-  Save:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>,
-  Publish:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M22 2L11 13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>,
-  Sync:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0115-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 01-15 6.7L3 16" /></svg>,
-  Compare:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="12" y1="2" x2="12" y2="22"></line><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"></path><polyline points="5 14 9 10 5 6"></polyline><path d="M19 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"></path><polyline points="19 10 15 14 19 18"></polyline></svg>,
-  Document: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="36" height="36"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>,
-  Warning:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
-  Check:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><polyline points="20 6 9 17 4 12" /></svg>,
-  ArrowLeft:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>,
-  External: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>,
+  Sparkle:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/></svg>,
+  Save:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+  Publish:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+  Sync:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg>,
+  Compare:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="12" y1="2" x2="12" y2="22"/><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><polyline points="5 14 9 10 5 6"/><path d="M19 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/><polyline points="19 10 15 14 19 18"/></svg>,
+  Document:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="36" height="36"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  Warning:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  Check:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>,
+  ArrowLeft: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+  External:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,12 +115,8 @@ function ComparisonTable({ rubric, lecturerScores, aiBreakdown, finalScores, onF
         <table className="ios-table">
           <thead>
             <tr>
-              <th>Criterion</th>
-              <th>Lecturer Score</th>
-              <th>AI Score</th>
-              <th>Match?</th>
-              <th>AI Comment</th>
-              <th>Final Score</th>
+              <th>Criterion</th><th>Lecturer Score</th><th>AI Score</th>
+              <th>Match?</th><th>AI Comment</th><th>Final Score</th>
             </tr>
           </thead>
           <tbody>
@@ -139,9 +134,7 @@ function ComparisonTable({ rubric, lecturerScores, aiBreakdown, finalScores, onF
                       <MiniBar value={r.lecScore} max={r.max} color="var(--ocean)" />
                       <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>{r.lecPct}%</div>
                     </div>
-                  ) : (
-                    <span style={{ color: 'var(--text-muted)', fontSize: 12, fontStyle: 'italic' }}>Not scored</span>
-                  )}
+                  ) : <span style={{ color: 'var(--text-muted)', fontSize: 12, fontStyle: 'italic' }}>Not scored</span>}
                 </td>
                 <td>
                   {r.aiScore !== null ? (
@@ -151,9 +144,7 @@ function ComparisonTable({ rubric, lecturerScores, aiBreakdown, finalScores, onF
                       <MiniBar value={r.aiScore} max={r.max} color="#7c3aed" />
                       <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>{r.aiPct}%</div>
                     </div>
-                  ) : (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>No AI data</div>
-                  )}
+                  ) : <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>No AI data</div>}
                 </td>
                 <td>
                   {r.diff !== null ? (
@@ -163,20 +154,15 @@ function ComparisonTable({ rubric, lecturerScores, aiBreakdown, finalScores, onF
                       </span>
                       <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.diff}% gap</span>
                     </div>
-                  ) : (
-                    <span style={{ color: 'var(--text-muted)' }}>—</span>
-                  )}
+                  ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
                 <td style={{ maxWidth: 200, fontSize: 12, lineHeight: 1.5 }}>
-                  {r.aiComment ? r.aiComment : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                  {r.aiComment || <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
                 <td>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <input
-                      type="number"
-                      min="0"
-                      max={r.max}
-                      className="ios-input"
+                      type="number" min="0" max={r.max} className="ios-input"
                       value={finalScores[r.criterion] ?? r.lecScore ?? ''}
                       onChange={e => {
                         let v = e.target.value === '' ? '' : Number(e.target.value);
@@ -243,15 +229,16 @@ function ComparisonTable({ rubric, lecturerScores, aiBreakdown, finalScores, onF
       </div>
 
       <div style={{ display: 'flex', gap: 20, marginTop: 16, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, background: 'var(--ocean)', borderRadius: 2 }} /> Lecturer Score
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, background: '#7c3aed', borderRadius: 2 }} /> AI Score
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, background: 'var(--foam)', border: '1px solid var(--sky)', borderRadius: 2 }} /> Final Score (editable)
-        </span>
+        {[
+          { color: 'var(--ocean)', label: 'Lecturer Score' },
+          { color: '#7c3aed',      label: 'AI Score' },
+          { color: 'var(--foam)',  label: 'Final Score (editable)', border: '1px solid var(--sky)' },
+        ].map(s => (
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 10, height: 10, background: s.color, border: s.border, borderRadius: 2 }} />
+            {s.label}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -277,46 +264,42 @@ function ScoreBar({ score, maxScore }) {
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LecturerMarking() {
-  const [submissions,  setSubmissions]  = useState([]);
-  const [selected,     setSelected]     = useState(null);
-  const [lecScores,    setLecScores]    = useState({});
-  const [finalScores,  setFinalScores]  = useState({});
-  const [feedback,     setFeedback]     = useState('');
-  const [loadingAI,    setLoadingAI]    = useState(false);
-  const [reanalysing,  setReanalysing]  = useState(false);
-  const [saving,       setSaving]       = useState(false);
-  const [publishing,   setPublishing]   = useState(false);
-  const [msg,          setMsg]          = useState({ text: '', type: '' });
-  const [loading,      setLoading]      = useState(true);
-  const [activeTab,    setActiveTab]    = useState('mark');
+  const [submissions, setSubmissions] = useState([]);
+  const [selected,    setSelected]    = useState(null);
+  const [lecScores,   setLecScores]   = useState({});
+  const [finalScores, setFinalScores] = useState({});
+  const [feedback,    setFeedback]    = useState('');
+  const [loadingAI,   setLoadingAI]   = useState(false);
+  const [reanalysing, setReanalysing] = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [publishing,  setPublishing]  = useState(false);
+  const [msg,         setMsg]         = useState({ text: '', type: '' });
+  const [loading,     setLoading]     = useState(true);
+  const [activeTab,   setActiveTab]   = useState('mark');
 
-  // ✅ FIX: removed dead-code second `return subs` — now single clean return
   const fetchSubs = useCallback(async () => {
     try {
       const r    = await getAllSubmissions();
       const subs = r.data.submissions || [];
 
-      // FINAL CORRECT FLOW:
-      // Marking & Feedback shows ONLY actual final submissions that still need final marking.
-      // It must NOT show:
-      //   - pre-approval drafts: pending_review / approved / rejected
-      //   - already published final marks: published === true
-      // After lecturer clicks "Publish to Student", this page becomes empty until a new final submission is uploaded.
-      const actualFinalSubs = subs.filter((s) => {
-        const approvalStatus = s.approvalStatus || 'draft';
-        const isActualFinalSubmission = approvalStatus === 'draft';
-        const isAlreadyPublished = s.published === true;
-
-        return isActualFinalSubmission && !isAlreadyPublished;
+      // ── CORRECT FLOW ────────────────────────────────────────────────────
+      // Marking & Feedback shows submissions that:
+      //   1. Have been approved from Pre-Approvals (approvalStatus === 'approved')
+      //      OR were submitted directly without the pre-approval flow (approvalStatus === 'draft' or missing)
+      //   2. Have NOT yet had final marks published (published !== true)
+      //
+      // FIX: The old code required approvalStatus === 'draft' which excluded
+      // every pre-approval submission. Now we include 'approved' ones too.
+      const markingQueue = subs.filter(s => {
+        const status          = s.approvalStatus || 'draft';
+        const isReadyToMark   = status === 'approved' || status === 'draft';
+        const notYetPublished = s.published !== true;
+        return isReadyToMark && notYetPublished;
       });
 
-      setSubmissions(actualFinalSubs);
-
-      if (actualFinalSubs.length === 0) {
-        setSelected(null);
-      }
-
-      return actualFinalSubs; // ✅ single return
+      setSubmissions(markingQueue);
+      if (markingQueue.length === 0) setSelected(null);
+      return markingQueue;
     } catch {
       return [];
     } finally {
@@ -326,11 +309,8 @@ export default function LecturerMarking() {
 
   useEffect(() => {
     fetchSubs().then(subs => {
-      if (subs.length > 0) {
-        initSub(subs[0]);
-      } else {
-        setSelected(null);
-      }
+      if (subs.length > 0) initSub(subs[0]);
+      else setSelected(null);
     });
   }, []);
 
@@ -340,40 +320,35 @@ export default function LecturerMarking() {
     setMsg({ text: '', type: '' });
     setActiveTab('mark');
     const lec = {};
-    if (sub.rubricScores?.length > 0) {
+    if (sub.rubricScores?.length > 0)
       sub.rubricScores.forEach(r => { lec[r.criterion] = r.score; });
-    }
     setLecScores(lec);
     setFinalScores({ ...lec });
   };
 
   const getRubric = (sub, aiBreakdown) => {
-    if (aiBreakdown?.length > 0) {
+    if (aiBreakdown?.length > 0)
       return aiBreakdown.map(rb => ({
         criterion: rb.criterion,
         maxScore:  rb.maxScore || rb.max_score || rb.max || 10,
       }));
-    }
     if (sub?.assignmentRubric?.length > 0) return sub.assignmentRubric;
     if (sub?.rubricScores?.length > 0)
       return sub.rubricScores.map(r => ({ criterion: r.criterion, maxScore: r.maxScore }));
     return [
-      { criterion: 'Thesis & Argument Clarity',  maxScore: 30 },
-      { criterion: 'Evidence & Source Quality',   maxScore: 25 },
-      { criterion: 'Structure & Organisation',    maxScore: 20 },
-      { criterion: 'Critical Analysis',           maxScore: 15 },
-      { criterion: 'Writing Mechanics',           maxScore: 10 },
+      { criterion: 'Thesis & Argument Clarity', maxScore: 30 },
+      { criterion: 'Evidence & Source Quality',  maxScore: 25 },
+      { criterion: 'Structure & Organisation',   maxScore: 20 },
+      { criterion: 'Critical Analysis',          maxScore: 15 },
+      { criterion: 'Writing Mechanics',          maxScore: 10 },
     ];
   };
 
   const aiAnalysis      = selected?.aiAnalysis;
   const hasAIData       = aiAnalysis?.status === 'done';
   const aiBreakdownData = aiAnalysis?.rubricBreakdown
-    || aiAnalysis?.breakdown
-    || aiAnalysis?.criteria
-    || aiAnalysis?.scores
-    || aiAnalysis?.rubric
-    || [];
+    || aiAnalysis?.breakdown || aiAnalysis?.criteria
+    || aiAnalysis?.scores    || aiAnalysis?.rubric || [];
 
   const rubric = getRubric(selected, aiBreakdownData);
 
@@ -381,14 +356,15 @@ export default function LecturerMarking() {
     const v = lecScores[r.criterion];
     return a + ((v !== undefined && v !== '') ? Number(v) : 0);
   }, 0);
-  const maxTotal = rubric.reduce((a, r) => a + (Number(r.maxScore) || 0), 0);
-  const lecPct   = maxTotal > 0 ? Math.round((lecTotal / maxTotal) * 100) : 0;
-  const lecGrade = getGrade(lecPct);
+  const maxTotal   = rubric.reduce((a, r) => a + (Number(r.maxScore) || 0), 0);
+  const lecPct     = maxTotal > 0 ? Math.round((lecTotal / maxTotal) * 100) : 0;
+  const lecGrade   = getGrade(lecPct);
 
   const finalTotal = rubric.reduce((a, r) => {
     const fv  = finalScores[r.criterion];
     const lv  = lecScores[r.criterion];
-    const val = (fv !== undefined && fv !== '') ? Number(fv) : ((lv !== undefined && lv !== '') ? Number(lv) : 0);
+    const val = (fv !== undefined && fv !== '') ? Number(fv)
+              : ((lv !== undefined && lv !== '') ? Number(lv) : 0);
     return a + val;
   }, 0);
   const finalPct   = maxTotal > 0 ? Math.round((finalTotal / maxTotal) * 100) : 0;
@@ -397,14 +373,15 @@ export default function LecturerMarking() {
   const aiTotal = hasAIData
     ? aiBreakdownData.reduce((a, rb) => a + (Number(rb.score) || 0), 0)
     : null;
-  const aiPct = (aiTotal !== null && maxTotal > 0) ? Math.round((aiTotal / maxTotal) * 100) : null;
+  const aiPct = (aiTotal !== null && maxTotal > 0)
+    ? Math.round((aiTotal / maxTotal) * 100) : null;
 
   const applyAIScoresToFinal = () => {
     if (!hasAIData) { reanalyse(true); return; }
-    const normStr    = (s) => (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    const normStr     = (s) => (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
     const findAiScore = (criterion) => {
-      const bd    = aiBreakdownData;
-      let match   = bd.find(rb => rb.criterion === criterion);
+      const bd  = aiBreakdownData;
+      let match = bd.find(rb => rb.criterion === criterion);
       if (!match) match = bd.find(rb => rb.criterion?.toLowerCase() === criterion.toLowerCase());
       if (!match) {
         const nc = normStr(criterion);
@@ -422,7 +399,7 @@ export default function LecturerMarking() {
       if (score !== undefined) aiMap[r.criterion] = score;
     });
     setFinalScores(aiMap);
-    setMsg({ text: 'AI scores applied to Final column. Your lecturer scores are unchanged. Adjust as needed.', type: 'info' });
+    setMsg({ text: 'AI scores applied to Final column. Adjust as needed.', type: 'info' });
     setActiveTab('compare');
   };
 
@@ -439,13 +416,14 @@ export default function LecturerMarking() {
         const refreshed = subs.find(s => s._id === selected._id);
         if (refreshed?.aiAnalysis?.status === 'done') {
           initSub(refreshed);
-          const rAI = refreshed.aiAnalysis;
-          const rBD = rAI?.rubricBreakdown || rAI?.breakdown || rAI?.criteria || rAI?.scores || rAI?.rubric || [];
+          const rBD = refreshed.aiAnalysis?.rubricBreakdown
+            || refreshed.aiAnalysis?.breakdown || refreshed.aiAnalysis?.criteria
+            || refreshed.aiAnalysis?.scores    || refreshed.aiAnalysis?.rubric || [];
           if (autoApply && rBD.length > 0) {
             const aiMap = {};
             rBD.forEach(rb => { aiMap[rb.criterion] = rb.score; });
             setFinalScores(aiMap);
-            setMsg({ text: 'AI analysis complete! AI scores applied to Final column. Adjust as needed.', type: 'success' });
+            setMsg({ text: 'AI analysis complete! Scores applied to Final column.', type: 'success' });
           } else {
             setMsg({ text: 'AI analysis complete!', type: 'success' });
           }
@@ -456,7 +434,7 @@ export default function LecturerMarking() {
         } else if (attempts < 10) {
           setTimeout(poll, 5000);
         } else {
-          setMsg({ text: 'Analysis is taking longer than expected. Try refreshing the page.', type: 'error' });
+          setMsg({ text: 'Analysis is taking longer than expected. Try refreshing.', type: 'error' });
           setReanalysing(false);
         }
       };
@@ -515,11 +493,10 @@ export default function LecturerMarking() {
         ...(publish && { published: true }),
       });
       if (publish) {
-        // Once final marks are published, remove it from Marking & Feedback.
-        // This page should only contain items still waiting for final marking.
+        // Remove from marking queue once published — marks are now with student
         setSubmissions(prev => prev.filter(s => s._id !== selected._id));
         setSelected(null);
-        setMsg({ text: 'Marks published to student! This item has been removed from the marking queue.', type: 'success' });
+        setMsg({ text: 'Marks published to student! Removed from marking queue.', type: 'success' });
       } else {
         setSubmissions(prev => prev.map(s =>
           s._id === selected._id
@@ -539,8 +516,8 @@ export default function LecturerMarking() {
   const ext       = getExt(selected?.filePath || '');
   const viewerUrl = fileUrl
     ? (ext === 'docx' || ext === 'doc'
-      ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
-      : fileUrl)
+        ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
+        : fileUrl)
     : null;
 
   const TABS = [
@@ -561,13 +538,18 @@ export default function LecturerMarking() {
       <div className="ios-page-content">
         {loading ? (
           <div className="ios-loading-state">
-            <div className="ios-spinner"></div>
+            <div className="ios-spinner" />
             <p>Loading submissions…</p>
           </div>
         ) : submissions.length === 0 ? (
           <div className="ios-empty-state" style={{ marginTop: 40 }}>
             <Icons.Document />
-            <p>No submissions waiting for marking.<br /><span style={{ fontSize: 13, color: 'var(--text-muted)' }}>This page will stay empty until a student uploads a submission.</span></p>
+            <p>
+              No submissions waiting for marking.<br />
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                Approved pre-approval submissions will appear here once the student uploads their final file.
+              </span>
+            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
@@ -606,9 +588,16 @@ export default function LecturerMarking() {
                     <span className={`ios-badge ${selected?.status === 'Graded' ? 'ios-badge--graded' : 'ios-badge--pending'}`}>
                       {selected?.status || 'Pending'}
                     </span>
+                    {/* Show approval origin badge */}
+                    {selected?.approvalStatus === 'approved' && (
+                      <span className="ios-badge ios-badge--graded" style={{ background: '#d1fae5', color: '#065f46' }}>
+                        ✓ Pre-Approved
+                      </span>
+                    )}
                     {hasAIData && (
                       <span className="ios-badge ios-badge--pending" style={{ background: 'rgba(0,150,199,0.10)', color: 'var(--sky)' }}>
-                        <Icons.Sparkle /> <span style={{ marginLeft: 4 }}>AI: {aiAnalysis.predictedScore}% ({aiAnalysis.predictedGrade})</span>
+                        <Icons.Sparkle />
+                        <span style={{ marginLeft: 4 }}>AI: {aiAnalysis.predictedScore}% ({aiAnalysis.predictedGrade})</span>
                       </span>
                     )}
                   </div>
@@ -630,20 +619,19 @@ export default function LecturerMarking() {
                     href={ext === 'docx' || ext === 'doc'
                       ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=false`
                       : fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                    target="_blank" rel="noreferrer"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 13, fontWeight: 500, color: 'var(--ocean)', textDecoration: 'none' }}
                   >
                     <Icons.External /> Open full file in new tab
                   </a>
                 )}
 
-                {/* Score summary — 3 sources */}
+                {/* Score summary */}
                 <div className="ios-stats-grid-3">
                   {[
-                    { label: 'Lecturer', pct: lecPct,  grade: lecGrade,  color: 'var(--ocean)', bg: 'var(--foam)' },
-                    { label: 'AI',       pct: aiPct,   grade: aiPct !== null ? getGrade(aiPct) : '—', color: '#7c3aed', bg: '#f5f3ff' },
-                    { label: 'Final',    pct: finalPct, grade: finalGrade, color: '#16a34a',    bg: '#f0fdf4' },
+                    { label: 'Lecturer', pct: lecPct,  grade: lecGrade,                          color: 'var(--ocean)', bg: 'var(--foam)' },
+                    { label: 'AI',       pct: aiPct,   grade: aiPct !== null ? getGrade(aiPct) : '—', color: '#7c3aed',      bg: '#f5f3ff'    },
+                    { label: 'Final',    pct: finalPct, grade: finalGrade,                         color: '#16a34a',      bg: '#f0fdf4'    },
                   ].map(item => (
                     <div key={item.label} className="ios-score-card" style={{ background: item.bg }}>
                       <div className="ios-score-card-label">{item.label}</div>
@@ -656,19 +644,24 @@ export default function LecturerMarking() {
                 </div>
 
                 {msg.text && (
-                  <div className={`ios-alert ios-alert--${msg.type === 'error' ? 'error' : msg.type === 'success' ? 'success' : 'info'}`} style={{ marginTop: 16, marginBottom: 0 }}>
+                  <div className={`ios-alert ios-alert--${msg.type === 'error' ? 'error' : msg.type === 'success' ? 'success' : 'info'}`}
+                    style={{ marginTop: 16, marginBottom: 0 }}>
                     {msg.text}
                   </div>
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
-                  <button onClick={() => save(false)} disabled={saving} className="ios-action-btn" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 12 }}>
+                  <button onClick={() => save(false)} disabled={saving}
+                    className="ios-action-btn"
+                    style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13 }}>
                       {saving ? <div className="ios-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : <Icons.Save />}
                       {saving ? 'Saving…' : 'Save Marks & Feedback'}
                     </div>
                   </button>
-                  <button onClick={() => save(true)} disabled={publishing} className="ios-action-btn ios-action-btn--primary" style={{ padding: 12 }}>
+                  <button onClick={() => save(true)} disabled={publishing}
+                    className="ios-action-btn ios-action-btn--primary"
+                    style={{ padding: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13 }}>
                       {publishing ? <div className="ios-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : <Icons.Publish />}
                       {publishing ? 'Publishing…' : 'Publish to Student'}
@@ -684,11 +677,8 @@ export default function LecturerMarking() {
               {/* Tab Pills */}
               <div className="ios-filter-row" style={{ marginBottom: 4 }}>
                 {TABS.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setActiveTab(key)}
-                    className={`ios-filter-pill ${activeTab === key ? 'ios-filter-pill--active' : ''}`}
-                  >
+                  <button key={key} onClick={() => setActiveTab(key)}
+                    className={`ios-filter-pill ${activeTab === key ? 'ios-filter-pill--active' : ''}`}>
                     {label}
                   </button>
                 ))}
@@ -740,14 +730,13 @@ export default function LecturerMarking() {
                               </div>
                               <input
                                 type="number" min="0" max={r.maxScore}
-                                placeholder="—"
-                                className="ios-input"
+                                placeholder="—" className="ios-input"
                                 value={val ?? ''}
                                 onChange={e => {
                                   let v = e.target.value === '' ? '' : Number(e.target.value);
                                   if (v !== '' && v < 0) v = 0;
                                   if (v !== '' && v > r.maxScore) v = r.maxScore;
-                                  setLecScores(prev  => ({ ...prev,  [r.criterion]: v }));
+                                  setLecScores(prev  => ({ ...prev, [r.criterion]: v }));
                                   setFinalScores(prev => ({ ...prev, [r.criterion]: v }));
                                 }}
                                 style={{ width: 80, padding: 10, fontSize: 16, fontWeight: 700, textAlign: 'center' }}
@@ -775,7 +764,9 @@ export default function LecturerMarking() {
                       </div>
                     </div>
 
-                    <button onClick={() => setActiveTab('compare')} className="ios-action-btn ios-action-btn--ghost" style={{ width: '100%', marginTop: 16, padding: 12 }}>
+                    <button onClick={() => setActiveTab('compare')}
+                      className="ios-action-btn ios-action-btn--ghost"
+                      style={{ width: '100%', marginTop: 16, padding: 12 }}>
                       View Comparison Table →
                     </button>
                   </div>
@@ -783,7 +774,8 @@ export default function LecturerMarking() {
                   <div className="ios-section-card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <div className="ios-section-title" style={{ marginBottom: 0 }}>Feedback for Student</div>
-                      <button onClick={generateFeedback} disabled={loadingAI} className="ios-action-btn ios-action-btn--primary">
+                      <button onClick={generateFeedback} disabled={loadingAI}
+                        className="ios-action-btn ios-action-btn--primary">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {loadingAI
                             ? <div className="ios-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
@@ -813,12 +805,9 @@ export default function LecturerMarking() {
                         Review scores side-by-side. Edit <strong>Final Score</strong> to set the student's final mark.
                       </div>
                     </div>
-                    <button
-                      onClick={applyAIScoresToFinal}
-                      disabled={reanalysing}
+                    <button onClick={applyAIScoresToFinal} disabled={reanalysing}
                       className="ios-action-btn"
-                      style={{ background: reanalysing ? 'var(--border)' : '#7c3aed', color: reanalysing ? 'var(--text-muted)' : '#fff' }}
-                    >
+                      style={{ background: reanalysing ? 'var(--border)' : '#7c3aed', color: reanalysing ? 'var(--text-muted)' : '#fff' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {reanalysing
                           ? <div className="ios-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
@@ -830,7 +819,7 @@ export default function LecturerMarking() {
 
                   {!hasAIData && (
                     <div className="ios-alert ios-alert--warn">
-                      <strong>AI analysis not available yet.</strong> Click "Run AI Analysis" to start it. Your lecturer scores are still visible and usable.
+                      <strong>AI analysis not available yet.</strong> Click "Run &amp; Apply AI" to start it.
                     </div>
                   )}
 
@@ -894,7 +883,7 @@ export default function LecturerMarking() {
 
                   {!aiAnalysis || aiAnalysis.status === 'pending' ? (
                     <div className="ios-loading-state" style={{ padding: '60px 0' }}>
-                      <div className="ios-spinner"></div>
+                      <div className="ios-spinner" />
                       <p>AI analysis running in background…<br /><span style={{ fontSize: 11 }}>Refresh in a few seconds or click Re-analyse</span></p>
                     </div>
                   ) : aiAnalysis.status === 'failed' ? (
@@ -977,7 +966,8 @@ export default function LecturerMarking() {
                         </div>
                       )}
 
-                      <button onClick={() => setActiveTab('compare')} className="ios-action-btn" style={{ width: '100%', padding: 14, background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #e9d5ff', marginTop: 8 }}>
+                      <button onClick={() => setActiveTab('compare')} className="ios-action-btn"
+                        style={{ width: '100%', padding: 14, background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #e9d5ff', marginTop: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
                           <Icons.Compare /> Compare with My Scores
                         </div>

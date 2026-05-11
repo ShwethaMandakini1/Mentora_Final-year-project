@@ -5,13 +5,6 @@ import { getMySubmissions, getAssignments, submitAssignment, updateSubmission, d
 import API from '../../api/api';
 import './dashboard.css';
 
-// Pre-approval drafts are only lecturer review records.
-// Actual final submissions have approvalStatus 'draft'.
-const PRE_APPROVAL_STATUSES = ['pending_review', 'approved', 'rejected'];
-const isPreApprovalDraft = (s) => PRE_APPROVAL_STATUSES.includes(s.approvalStatus);
-const isFinalSubmission = (s) => !PRE_APPROVAL_STATUSES.includes(s.approvalStatus);
-
-
 // ── AI Report Component ───────────────────────────────────────────────────────
 function AIReport({ submission }) {
   const ai = submission?.aiAnalysis;
@@ -209,7 +202,11 @@ function PreApprovalUpload({ assignments, submissions, onSuccess }) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg]             = useState('');
 
-  const draftSubs = submissions.filter(isPreApprovalDraft);
+  const draftSubs = submissions.filter(s =>
+    s.approvalStatus === 'pending_review' ||
+    s.approvalStatus === 'rejected' ||
+    s.approvalStatus === 'approved'
+  );
 
   const handleSubmit = async () => {
     if (!file || !selected) return;
@@ -359,50 +356,8 @@ function PreApprovalUpload({ assignments, submissions, onSuccess }) {
                     <td style={{ padding: '14px 16px', fontWeight: 600, color: '#374151' }}>
                       {s.assignmentName || '—'}
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <span style={{ color: '#2563eb', fontWeight: 500 }}>
-                          📄 {s.fileName || '—'}
-                        </span>
-
-                        {s.filePath && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              window.open(
-                                `${import.meta.env.VITE_API_URL.replace('/api', '')}/${s.filePath}`,
-                                '_blank'
-                              )
-                            }
-                            style={{
-                              background: '#eff6ff',
-                              color: '#2563eb',
-                              border: '1px solid #bfdbfe',
-                              borderRadius: 8,
-                              padding: '5px 12px',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              transition: '0.2s',
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.background = '#dbeafe';
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.background = '#eff6ff';
-                            }}
-                          >
-                            👁 View
-                          </button>
-                        )}
-                      </div>
+                    <td style={{ padding: '14px 16px', color: '#2563eb', fontSize: 13 }}>
+                      📄 {s.fileName || '—'}
                     </td>
                     <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: 12 }}>
                       {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : '—'}
@@ -490,7 +445,7 @@ export default function StudentSubmissions() {
       if (editMode && existingSub) {
         // FIX: PUT to update the SAME submission document in-place.
         // The backend returns the updated document — no new row in history.
-        const r = await updateSubmission(existingSub._id, fd);
+        const r  = await updateSubmission(existingSub._id, fd);
         updatedSub = r.data.submission;
 
         // FIX: Replace the existing entry in state — never push a new one
@@ -499,7 +454,7 @@ export default function StudentSubmissions() {
       } else {
         // Check subscription limit before new submission
         try {
-         const limitRes = await API.get('/subscription/check-limit');
+          const limitRes = await API.get('/subscriptions/check-limit');
           if (!limitRes.data.allowed) {
             setSubLimitMsg(limitRes.data.message || 'Submission limit reached. Please upgrade your plan.');
             setUploading(false);
@@ -554,16 +509,9 @@ export default function StudentSubmissions() {
   // FIX: match by assignment ObjectId first, fall back to assignmentName string
   const existingSub = selected
     ? submissions.find(s =>
-        isFinalSubmission(s) &&
-        (
-          (s.assignment && (s.assignment === selected._id || s.assignment?._id?.toString() === selected._id?.toString())) ||
-          s.assignmentName === selected.title
-        )
+        (s.assignment && (s.assignment === selected._id || s.assignment?._id?.toString() === selected._id?.toString())) ||
+        s.assignmentName === selected.title
       )
-    : null;
-
-  const approvedDraftForSelected = selected
-    ? draftSubs.find(s => s.assignmentName === selected.title && s.approvalStatus === 'approved')
     : null;
 
   // ── Assignment Detail Page ─────────────────────────────────────────────────
@@ -594,28 +542,12 @@ export default function StudentSubmissions() {
             {selected.moduleCode} – Assignment detail
           </p>
 
-          {approvedDraftForSelected && !existingSub && (
-            <div style={{
-              background: '#ecfdf5',
-              border: '1px solid #bbf7d0',
-              color: '#166534',
-              borderRadius: 10,
-              padding: '12px 16px',
-              marginBottom: 18,
-              fontSize: 13,
-              fontWeight: 600,
-              lineHeight: 1.6,
-            }}>
-              ✅ Your draft was approved. Now upload the final assignment below to make the actual submission.
-            </div>
-          )}
-
           {existingSub && (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
                           background: '#f0fdf4', border: '1px solid #bbf7d0',
                           borderRadius: 8, padding: '8px 16px', marginBottom: 20,
                           fontSize: 13, color: '#15803d', fontWeight: 600 }}>
-              ✓ Done: Final submission uploaded
+              ✓ Done: Make a submission
             </div>
           )}
 
