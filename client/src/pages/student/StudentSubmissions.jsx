@@ -202,7 +202,11 @@ function PreApprovalUpload({ assignments, submissions, onSuccess }) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg]             = useState('');
 
-  const draftSubs = submissions.filter(s => s.approvalStatus === 'pending_review' || s.approvalStatus === 'rejected');
+  const draftSubs = submissions.filter(s =>
+    s.approvalStatus === 'pending_review' ||
+    s.approvalStatus === 'rejected' ||
+    s.approvalStatus === 'approved'
+  );
 
   const handleSubmit = async () => {
     if (!file || !selected) return;
@@ -352,8 +356,50 @@ function PreApprovalUpload({ assignments, submissions, onSuccess }) {
                     <td style={{ padding: '14px 16px', fontWeight: 600, color: '#374151' }}>
                       {s.assignmentName || '—'}
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#2563eb', fontSize: 13 }}>
-                      📄 {s.fileName || '—'}
+                    <td style={{ padding: '14px 16px', fontSize: 13 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span style={{ color: '#2563eb', fontWeight: 500 }}>
+                          📄 {s.fileName || '—'}
+                        </span>
+
+                        {s.filePath && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              window.open(
+                                `${import.meta.env.VITE_API_URL.replace('/api', '')}/${s.filePath}`,
+                                '_blank'
+                              )
+                            }
+                            style={{
+                              background: '#eff6ff',
+                              color: '#2563eb',
+                              border: '1px solid #bfdbfe',
+                              borderRadius: 8,
+                              padding: '5px 12px',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: '0.2s',
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.background = '#dbeafe';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.background = '#eff6ff';
+                            }}
+                          >
+                            👁 View
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: 12 }}>
                       {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : '—'}
@@ -391,8 +437,11 @@ export default function StudentSubmissions() {
   const [editMode, setEditMode]       = useState(false);
   const [removing, setRemoving]       = useState(false);
   const [viewSub, setViewSub]         = useState(null);
+  const [subLimitMsg, setSubLimitMsg] = useState('');
   const pollRef                       = useRef(null);
 
+  // FIX: fetchAll refreshes the submissions list from server — ensures
+  // history always reflects the real state (edited or deleted documents).
   const fetchAll = () => {
     getMySubmissions().then(r => setSubmissions(r.data.submissions || [])).catch(() => {});
     getAssignments().then(r  => setAssignments(r.data.assignments   || [])).catch(() => {});
@@ -408,6 +457,7 @@ export default function StudentSubmissions() {
           const updated = res.data.submission;
           if (updated.aiAnalysis?.status !== 'pending') {
             setViewSub(updated);
+            // FIX: Update the existing entry in-place — no duplicate created
             setSubmissions(prev => prev.map(s => s._id === updated._id ? updated : s));
             clearInterval(pollRef.current);
           }
@@ -419,7 +469,8 @@ export default function StudentSubmissions() {
 
   const handleUpload = async () => {
     if (!file || !selected) return;
-    setUploading(true); setMsg('');
+    setUploading(true); setMsg(''); setSubLimitMsg('');
+
     try {
       const fd = new FormData();
       fd.append('file',           file);
@@ -432,22 +483,48 @@ export default function StudentSubmissions() {
       fd.append('rubric',         JSON.stringify(selected.rubric || []));
 
       let updatedSub;
+
       if (editMode && existingSub) {
+        // FIX: PUT to update the SAME submission document in-place.
+        // The backend returns the updated document — no new row in history.
         const r = await updateSubmission(existingSub._id, fd);
         updatedSub = r.data.submission;
-        setMsg('✅ Submission updated! AI is analysing your file...');
+
+        // FIX: Replace the existing entry in state — never push a new one
+        setSubmissions(prev => prev.map(s => s._id === updatedSub._id ? updatedSub : s));
+        setMsg('✅ Submission updated! AI is re-analysing your file...');
       } else {
-        const r = await submitAssignment(fd);
+        // Check subscription limit before new submission
+        try {
+         const limitRes = await API.get('/subscription/check-limit');
+          if (!limitRes.data.allowed) {
+            setSubLimitMsg(limitRes.data.message || 'Submission limit reached. Please upgrade your plan.');
+            setUploading(false);
+            return;
+          }
+        } catch { /* non-fatal — backend also enforces this */ }
+
+        const r  = await submitAssignment(fd);
         updatedSub = r.data.submission;
+
+        // FIX: Add the new submission to list
+        setSubmissions(prev => [updatedSub, ...prev]);
         setMsg('✅ Submitted! AI is analysing your file...');
       }
 
       setFile(null);
       setEditMode(false);
       setViewSub(updatedSub);
-      fetchAll();
-    } catch { setMsg('❌ Upload failed. Please try again.'); }
-    finally  { setUploading(false); }
+    } catch (err) {
+      const serverMsg = err?.response?.data?.message;
+      if (serverMsg?.includes('limit') || serverMsg?.includes('upgrade')) {
+        setSubLimitMsg(serverMsg);
+      } else {
+        setMsg('❌ Upload failed. Please try again.');
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemove = async () => {
@@ -455,12 +532,13 @@ export default function StudentSubmissions() {
     const removedId = existingSub._id;
     try {
       await deleteSubmission(removedId);
+
+      // FIX: Remove this submission from state immediately — it vanishes from history
       setSubmissions(prev => prev.filter(s => s._id !== removedId));
       setSelected(null);
       setRemoving(false);
       setViewSub(null);
       setMsg('');
-      fetchAll();
     } catch {
       setMsg('❌ Failed to remove submission.');
       setRemoving(false);
@@ -470,8 +548,12 @@ export default function StudentSubmissions() {
   const fmt    = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
   const isPast = (d) => d && new Date(d) < new Date();
 
+  // FIX: match by assignment ObjectId first, fall back to assignmentName string
   const existingSub = selected
-    ? submissions.find(s => s.assignmentName === selected.title || s.assignment === selected._id)
+    ? submissions.find(s =>
+        (s.assignment && (s.assignment === selected._id || s.assignment?._id?.toString() === selected._id?.toString())) ||
+        s.assignmentName === selected.title
+      )
     : null;
 
   // ── Assignment Detail Page ─────────────────────────────────────────────────
@@ -483,7 +565,12 @@ export default function StudentSubmissions() {
       <StudentLayout>
         <div style={{ padding: '30px 40px' }}>
           <button
-            onClick={() => { setSelected(null); setMsg(''); setFile(null); setEditMode(false); setRemoving(false); setViewSub(null); clearInterval(pollRef.current); }}
+            onClick={() => {
+              setSelected(null); setMsg(''); setFile(null);
+              setEditMode(false); setRemoving(false); setViewSub(null);
+              setSubLimitMsg('');
+              clearInterval(pollRef.current);
+            }}
             style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: 14,
                      cursor: 'pointer', marginBottom: 20 }}>
             ← Back
@@ -558,15 +645,16 @@ export default function StudentSubmissions() {
             )}
           </div>
 
+          {/* Edit / Remove buttons — only before deadline */}
           {existingSub && !past && (
             <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-              <button onClick={() => { setEditMode(true); setRemoving(false); setMsg(''); }}
+              <button onClick={() => { setEditMode(true); setRemoving(false); setMsg(''); setSubLimitMsg(''); }}
                 style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 8,
                          padding: '9px 22px', fontSize: 14, fontWeight: 500,
                          cursor: 'pointer', color: '#374151' }}>
                 Edit submission
               </button>
-              <button onClick={() => { setRemoving(true); setEditMode(false); setMsg(''); }}
+              <button onClick={() => { setRemoving(true); setEditMode(false); setMsg(''); setSubLimitMsg(''); }}
                 style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 8,
                          padding: '9px 22px', fontSize: 14, fontWeight: 500,
                          cursor: 'pointer', color: '#374151' }}>
@@ -598,6 +686,7 @@ export default function StudentSubmissions() {
             </div>
           )}
 
+          {/* Submission status table */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12,
                         padding: '22px 28px', marginBottom: 24 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Submission status</h3>
@@ -607,7 +696,7 @@ export default function StudentSubmissions() {
                   ['Submission status', existingSub ? 'Submitted for grading' : 'No submission yet', !!existingSub],
                   ['Grading status',    existingSub?.status === 'Graded' ? 'Graded' : 'Not marked', false],
                   ['Time remaining',    past ? 'Assignment is now closed' : `Due ${fmt(selected.deadline)}`, false],
-                  ['Last modified',     existingSub ? fmt(existingSub.submittedAt) : '—', false],
+                  ['Last modified',     existingSub ? fmt(existingSub.updatedAt || existingSub.submittedAt) : '—', false],
                   ['File submissions',  existingSub?.fileName || '—', false],
                 ].map(([label, value, highlight]) => (
                   <tr key={label} style={{ borderBottom: '1px solid #f3f4f6' }}>
@@ -627,6 +716,7 @@ export default function StudentSubmissions() {
             </table>
           </div>
 
+          {/* Upload / Edit form */}
           {(!existingSub || editMode) && !past && (
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12,
                           padding: '22px 28px', marginBottom: 24 }}>
@@ -635,7 +725,7 @@ export default function StudentSubmissions() {
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <input type="file" accept=".pdf,.docx"
-                  onChange={e => { setFile(e.target.files[0]); setMsg(''); }}
+                  onChange={e => { setFile(e.target.files[0]); setMsg(''); setSubLimitMsg(''); }}
                   style={{ fontSize: 13, color: '#374151' }} />
                 <button onClick={handleUpload} disabled={!file || uploading}
                   style={{ background: file && !uploading ? '#2563eb' : '#93c5fd',
@@ -645,7 +735,7 @@ export default function StudentSubmissions() {
                   {uploading ? 'Uploading…' : editMode ? 'Save Changes' : 'Upload Submission'}
                 </button>
                 {editMode && (
-                  <button onClick={() => { setEditMode(false); setFile(null); setMsg(''); }}
+                  <button onClick={() => { setEditMode(false); setFile(null); setMsg(''); setSubLimitMsg(''); }}
                     style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 8,
                              padding: '9px 20px', fontSize: 14, fontWeight: 500,
                              cursor: 'pointer', color: '#374151' }}>
@@ -653,6 +743,15 @@ export default function StudentSubmissions() {
                   </button>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Subscription limit warning */}
+          {subLimitMsg && (
+            <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 12,
+                          padding: '14px 20px', marginBottom: 16, fontSize: 13,
+                          color: '#92400e', fontWeight: 600 }}>
+              ⚠️ {subLimitMsg}
             </div>
           )}
 
@@ -717,7 +816,11 @@ export default function StudentSubmissions() {
               </div>
             )}
             {assignments.map((asgn, i) => {
-              const sub  = submissions.find(s => s.assignmentName === asgn.title || s.assignment === asgn._id);
+              // FIX: match by assignmentId first, then fall back to title
+              const sub  = submissions.find(s =>
+                (s.assignment && (s.assignment === asgn._id || s.assignment?._id?.toString() === asgn._id?.toString())) ||
+                s.assignmentName === asgn.title
+              );
               const done = !!sub;
               const past = isPast(asgn.deadline);
               return (
@@ -733,7 +836,7 @@ export default function StudentSubmissions() {
                     <div style={{ display: 'flex', alignItems: 'center',
                                   justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                       <button
-                        onClick={() => { setSelected(asgn); setMsg(''); setEditMode(false); setRemoving(false); setViewSub(null); }}
+                        onClick={() => { setSelected(asgn); setMsg(''); setEditMode(false); setRemoving(false); setViewSub(null); setSubLimitMsg(''); }}
                         style={{ background: 'none', border: 'none', padding: 0,
                                  fontSize: 15, fontWeight: 700, color: '#2563eb',
                                  cursor: 'pointer', textDecoration: 'underline', textAlign: 'left' }}>
@@ -776,7 +879,10 @@ export default function StudentSubmissions() {
         {tab === 'history' && (
           <div style={{ background: '#fff', border: '1px solid #e5e7eb',
                         borderRadius: 12, overflow: 'hidden' }}>
-            {submissions.length === 0 ? (
+            {/* FIX: Filter to only show real (non-approval-draft) submissions in history.
+                Approval-only drafts (approvalStatus=pending_review/rejected without being
+                also in the main flow) belong in the Pre-Approval tab. */}
+            {submissions.filter(s => !s.approvalStatus || s.approvalStatus === 'approved' || s.approvalStatus === 'draft').length === 0 ? (
               <div style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
                 <p style={{ fontSize: 14 }}>No submissions yet.</p>
@@ -785,14 +891,16 @@ export default function StudentSubmissions() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    {['File', 'Assignment', 'Module', 'Status', 'Approval', 'Submitted', 'Score', 'AI Report'].map(h => (
+                    {['File', 'Assignment', 'Module', 'Status', 'Submitted', 'Last Modified', 'Score', 'AI Report'].map(h => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: 'left',
                                            fontWeight: 600, color: '#374151', fontSize: 13 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {submissions.map((s, i) => (
+                  {submissions
+                    .filter(s => !s.approvalStatus || s.approvalStatus === 'approved' || s.approvalStatus === 'draft')
+                    .map((s, i) => (
                     <tr key={s._id || i}
                       style={{ borderBottom: '1px solid #f3f4f6',
                                background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -816,23 +924,12 @@ export default function StudentSubmissions() {
                           {s.status || 'Pending'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        {s.approvalStatus && (
-                          <span style={{
-                            background: s.approvalStatus === 'approved' ? '#d1fae5'
-                                      : s.approvalStatus === 'rejected' ? '#fee2e2' : '#fef3c7',
-                            color:      s.approvalStatus === 'approved' ? '#065f46'
-                                      : s.approvalStatus === 'rejected' ? '#991b1b' : '#92400e',
-                            borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700
-                          }}>
-                            {s.approvalStatus === 'approved'       ? '✅ Approved'
-                           : s.approvalStatus === 'rejected'       ? '❌ Rejected'
-                           : s.approvalStatus === 'pending_review' ? '⏳ In Review'
-                           :                                          '—'}
-                          </span>
-                        )}
-                      </td>
+                      {/* FIX: Show original submittedAt for when it was first submitted */}
                       <td style={{ padding: '12px 16px', color: '#374151' }}>{fmt(s.submittedAt)}</td>
+                      {/* FIX: Show updatedAt for last modified so edits are reflected */}
+                      <td style={{ padding: '12px 16px', color: '#6b7280', fontSize: 12 }}>
+                        {s.updatedAt && s.updatedAt !== s.submittedAt ? fmt(s.updatedAt) : '—'}
+                      </td>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: '#374151' }}>
                         {s.score != null ? s.score : '—'}
                       </td>

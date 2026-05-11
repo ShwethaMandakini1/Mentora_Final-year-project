@@ -154,3 +154,172 @@ body { font-family:'Poppins',sans-serif; }
 /* ── MESSAGES ── */
 .err-msg { color:#dc2626; font-size:12px; margin-bottom:10px; text-align:center; }
 .ok-msg  { color:#16a34a; font-size:12px; margin-bottom:10px; text-align:center; }
+/* ─────────────────────────────────────────────
+   Add these rules to your existing auth.css
+   ───────────────────────────────────────────── */
+
+/* Shared subtitle */
+.auth-subtitle {
+  font-size: 13px;
+  color: #8FA5BC;
+  margin-bottom: 28px;
+  margin-top: -10px;
+}
+
+/* ── Input group ── */
+.input-group {
+  margin-bottom: 16px;
+}
+.input-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4A6080;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ── Password wrapper ── */
+.pw-wrap {
+  position: relative;
+}
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8FA5BC;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.2s;
+}
+.pw-toggle:hover { color: #1c61c4; }
+
+/* ── Role selection step ── */
+.role-step h2,
+.login-step h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2d4a;
+}
+
+.role-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 2px solid #e2eaf3;
+  border-radius: 14px;
+  background: #f8fbff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+  width: 100%;
+}
+.role-card:hover {
+  border-color: #1c61c4;
+  background: #eef4ff;
+  box-shadow: 0 4px 16px rgba(28, 97, 196, 0.12);
+  transform: translateY(-2px);
+}
+.role-card:active {
+  transform: translateY(0);
+}
+
+.role-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #ddeaff;
+  color: #1c61c4;
+  flex-shrink: 0;
+}
+.role-card:hover .role-card-icon {
+  background: #1c61c4;
+  color: #fff;
+}
+
+.role-card-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a2d4a;
+  display: block;
+  line-height: 1.2;
+}
+.role-card-desc {
+  font-size: 12px;
+  color: #7a90ab;
+  display: block;
+  margin-top: 3px;
+}
+
+/* Make role-card a flex column for label+desc */
+.role-card > span:not(.role-card-icon) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Login step header (back btn + role badge) ── */
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A6080;
+  padding: 0;
+  transition: color 0.2s;
+}
+.back-btn:hover { color: #1c61c4; }
+
+.role-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #eef4ff;
+  border: 1.5px solid #d0e0ff;
+  border-radius: 30px;
+  padding: 5px 12px 5px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c61c4;
+}
+.role-badge svg {
+  width: 16px;
+  height: 16px;
+  color: #1c61c4;
+}
+/* ── REMOVE EDGE PASSWORD ICON ── */
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+}

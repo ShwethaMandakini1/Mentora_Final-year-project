@@ -15,19 +15,8 @@ export default function LecturerReports() {
       .finally(() => setLoading(false));
   }, []);
 
-  const mock = [
-    { _id:'1', student:{ username:'Kavindi K' }, assignmentName:'HCI Final Report', moduleName:'HCI', score:85, grade:'A',
-      feedback:'Excellent work on HCI principles.',
-      rubricScores:[{ criterion:'Thesis', score:27, maxScore:30 }, { criterion:'Evidence', score:22, maxScore:25 }, { criterion:'Structure', score:17, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:7, maxScore:10 }] },
-    { _id:'2', student:{ username:'Amal P' }, assignmentName:'SE Proposal', moduleName:'SE', score:82, grade:'A-',
-      feedback:'Good proposal with clear objectives.',
-      rubricScores:[{ criterion:'Thesis', score:25, maxScore:30 }, { criterion:'Evidence', score:21, maxScore:25 }, { criterion:'Structure', score:16, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
-    { _id:'3', student:{ username:'Saman W' }, assignmentName:'DBMS Research', moduleName:'DBMS', score:75, grade:'B+',
-      feedback:'Satisfactory research on database systems.',
-      rubricScores:[{ criterion:'Thesis', score:22, maxScore:30 }, { criterion:'Evidence', score:19, maxScore:25 }, { criterion:'Structure', score:15, maxScore:20 }, { criterion:'Analysis', score:11, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
-  ];
 
-  const display = loading ? [] : (submissions.length > 0 ? submissions : mock);
+  const display = loading ? [] : submissions;
   const avg     = display.length > 0 ? Math.round(display.reduce((a, s) => a + (s.score || 0), 0) / display.length) : 0;
   const highest = display.length > 0 ? Math.max(...display.map(s => s.score || 0)) : 0;
 
