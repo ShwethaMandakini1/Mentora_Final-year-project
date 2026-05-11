@@ -33,6 +33,7 @@ import AdminUsers         from './pages/admin/AdminUsers';
 import AdminLecturers     from './pages/admin/AdminLecturers';
 import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminManagement    from './pages/admin/AdminManagement';
+import Broadcast          from './pages/admin/Broadcast';  // ✅ NEW: Broadcast page
 
 // ─── Protected Route (Admin, Student, Lecturer) ──────────────────────────────
 function ProtectedRoute({ children, role }) {
@@ -97,6 +98,7 @@ function AppRoutes() {
       <Route path="/admin/lecturers"        element={<ProtectedRoute role="admin"><AdminLecturers /></ProtectedRoute>} />
       <Route path="/admin/subscriptions"    element={<ProtectedRoute role="admin"><AdminSubscriptions /></ProtectedRoute>} />
       <Route path="/admin/admins"           element={<ProtectedRoute role="admin"><AdminManagement /></ProtectedRoute>} />
+      <Route path="/admin/broadcast"        element={<ProtectedRoute role="admin"><Broadcast /></ProtectedRoute>} />  {/* ✅ NEW ROUTE */}
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
