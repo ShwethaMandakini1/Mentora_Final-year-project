@@ -473,6 +473,8 @@ export default function StudentSubmissions() {
       setFile(null);
       setEditMode(false);
       setViewSub(updatedSub);
+      // Refresh full list from server to ensure correct state after submit/edit
+      fetchAll();
     } catch (err) {
       const serverMsg = err?.response?.data?.message;
       if (serverMsg?.includes('limit') || serverMsg?.includes('upgrade')) {
@@ -506,11 +508,27 @@ export default function StudentSubmissions() {
   const fmt    = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
   const isPast = (d) => d && new Date(d) < new Date();
 
-  // FIX: match by assignment ObjectId first, fall back to assignmentName string
+  // Match ONLY actual final submissions (approvalStatus === 'draft' or null/undefined).
+  // Pre-approval submissions (pending_review / approved / rejected) must NOT count
+  // as "done" on the Assignments tab — they are separate documents in a different flow.
+  const PRE_APPROVAL_STATUSES = ['pending_review', 'approved', 'rejected'];
   const existingSub = selected
+    ? submissions.find(s => {
+        const isActualSubmission = !PRE_APPROVAL_STATUSES.includes(s.approvalStatus);
+        const matchesAssignment  =
+          (s.assignment && (s.assignment === selected._id || s.assignment?._id?.toString() === selected._id?.toString())) ||
+          s.assignmentName === selected.title;
+        return isActualSubmission && matchesAssignment;
+      })
+    : null;
+
+  // Check if there is an approved pre-approval for this assignment
+  // so we can show a hint to the student that they can now submit the final version
+  const approvedPreApproval = selected
     ? submissions.find(s =>
-        (s.assignment && (s.assignment === selected._id || s.assignment?._id?.toString() === selected._id?.toString())) ||
-        s.assignmentName === selected.title
+        s.approvalStatus === 'approved' &&
+        (s.assignmentName === selected.title ||
+         (s.assignment && s.assignment?.toString() === selected._id?.toString()))
       )
     : null;
 
@@ -547,7 +565,14 @@ export default function StudentSubmissions() {
                           background: '#f0fdf4', border: '1px solid #bbf7d0',
                           borderRadius: 8, padding: '8px 16px', marginBottom: 20,
                           fontSize: 13, color: '#15803d', fontWeight: 600 }}>
-              ✓ Done: Make a submission
+              ✅ Final submission uploaded
+            </div>
+          )}
+          {!existingSub && approvedPreApproval && (
+            <div style={{ background: '#fef9c3', border: '1px solid #fde68a',
+                          borderRadius: 8, padding: '12px 16px', marginBottom: 20,
+                          fontSize: 13, color: '#92400e', fontWeight: 600 }}>
+              💡 Your draft was pre-approved! Upload your final submission below.
             </div>
           )}
 
@@ -774,10 +799,20 @@ export default function StudentSubmissions() {
               </div>
             )}
             {assignments.map((asgn, i) => {
-              // FIX: match by assignmentId first, then fall back to title
-              const sub  = submissions.find(s =>
-                (s.assignment && (s.assignment === asgn._id || s.assignment?._id?.toString() === asgn._id?.toString())) ||
-                s.assignmentName === asgn.title
+              // Only count ACTUAL final submissions as "done" — not pre-approval drafts
+              const PRE_APPROVAL = ['pending_review', 'approved', 'rejected'];
+              const sub  = submissions.find(s => {
+                const isActual = !PRE_APPROVAL.includes(s.approvalStatus);
+                const matches  =
+                  (s.assignment && (s.assignment === asgn._id || s.assignment?._id?.toString() === asgn._id?.toString())) ||
+                  s.assignmentName === asgn.title;
+                return isActual && matches;
+              });
+              // Check if student has an approved pre-approval for this assignment
+              const hasApprovedPreApproval = submissions.some(s =>
+                s.approvalStatus === 'approved' &&
+                (s.assignmentName === asgn.title ||
+                 (s.assignment && s.assignment?.toString() === asgn._id?.toString()))
               );
               const done = !!sub;
               const past = isPast(asgn.deadline);
@@ -786,9 +821,9 @@ export default function StudentSubmissions() {
                   style={{ borderBottom: i < assignments.length - 1 ? '1px solid #f3f4f6' : 'none',
                            padding: '18px 24px', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                   <div style={{ width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                                background: done ? '#d1fae5' : '#dbeafe',
+                                background: done ? '#d1fae5' : hasApprovedPreApproval ? '#fef3c7' : '#dbeafe',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                    {done ? '✅' : '📄'}
+                    {done ? '✅' : hasApprovedPreApproval ? '🟡' : '📄'}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center',
@@ -800,14 +835,29 @@ export default function StudentSubmissions() {
                                  cursor: 'pointer', textDecoration: 'underline', textAlign: 'left' }}>
                         {asgn.title}
                       </button>
-                      {done && (
-                        <span style={{ background: '#d1fae5', color: '#065f46',
-                                       borderRadius: 20, padding: '3px 12px',
-                                       fontSize: 12, fontWeight: 700 }}>
-                          ✓ Done
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {done && (
+                          <span style={{ background: '#d1fae5', color: '#065f46',
+                                         borderRadius: 20, padding: '3px 12px',
+                                         fontSize: 12, fontWeight: 700 }}>
+                            ✓ Submitted
+                          </span>
+                        )}
+                        {!done && hasApprovedPreApproval && (
+                          <span style={{ background: '#fef3c7', color: '#92400e',
+                                         borderRadius: 20, padding: '3px 12px',
+                                         fontSize: 12, fontWeight: 700 }}>
+                            ✅ Pre-Approved — Submit Final Here
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {!done && hasApprovedPreApproval && (
+                      <div style={{ marginTop: 8, background: '#fef9c3', border: '1px solid #fde68a',
+                                    borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#92400e' }}>
+                        💡 Your draft was approved! Now submit your final version here.
+                      </div>
+                    )}
                     <ul style={{ listStyle: 'disc', paddingLeft: 18, marginTop: 8,
                                   fontSize: 13, color: '#374151', lineHeight: 2 }}>
                       <li>Submission Deadline – <strong>{fmt(asgn.deadline)}</strong>
@@ -837,10 +887,10 @@ export default function StudentSubmissions() {
         {tab === 'history' && (
           <div style={{ background: '#fff', border: '1px solid #e5e7eb',
                         borderRadius: 12, overflow: 'hidden' }}>
-            {/* FIX: Filter to only show real (non-approval-draft) submissions in history.
-                Approval-only drafts (approvalStatus=pending_review/rejected without being
-                also in the main flow) belong in the Pre-Approval tab. */}
-            {submissions.filter(s => !s.approvalStatus || s.approvalStatus === 'approved' || s.approvalStatus === 'draft').length === 0 ? (
+            {/* History shows ONLY actual final submissions (draft / null).
+                Pre-approval documents (pending_review / approved / rejected) belong
+                only in the Pre-Approval tab — they are a separate flow. */}
+            {submissions.filter(s => !['pending_review','approved','rejected'].includes(s.approvalStatus)).length === 0 ? (
               <div style={{ padding: 60, textAlign: 'center', color: '#9ca3af' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
                 <p style={{ fontSize: 14 }}>No submissions yet.</p>
@@ -857,7 +907,7 @@ export default function StudentSubmissions() {
                 </thead>
                 <tbody>
                   {submissions
-                    .filter(s => !s.approvalStatus || s.approvalStatus === 'approved' || s.approvalStatus === 'draft')
+                    .filter(s => !['pending_review','approved','rejected'].includes(s.approvalStatus))
                     .map((s, i) => (
                     <tr key={s._id || i}
                       style={{ borderBottom: '1px solid #f3f4f6',

@@ -8,10 +8,6 @@ const { extractText }        = require('../services/fileParserService');
 const { analyseSubmission }  = require('../services/gradeService');
 const mammoth                = require('mammoth');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Run AI analysis in background (non-blocking)
-// Called right after any file upload so analysis is ready when lecturer opens review
-// ─────────────────────────────────────────────────────────────────────────────
 const runAIAnalysis = async (submissionId, filePath, assignmentName, moduleCode, moduleName, rubric = [], context = '') => {
   try {
     const timeoutPromise = new Promise((_, reject) =>
@@ -43,11 +39,6 @@ const runAIAnalysis = async (submissionId, filePath, assignmentName, moduleCode,
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Attach assignment rubric criteria to a list of submissions
-// This lets the marking panel in LecturerRequests show criteria without
-// a separate API call to the assignments endpoint
-// ─────────────────────────────────────────────────────────────────────────────
 const attachRubrics = async (submissions) => {
   const names       = [...new Set(submissions.map(s => s.assignmentName).filter(Boolean))];
   const assignments = await Assignment.find({ title: { $in: names } }).lean();
@@ -59,20 +50,6 @@ const attachRubrics = async (submissions) => {
   }));
 };
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Separate real final submissions from pre-approval draft records
-// Pre-approval records use approvalStatus pending_review / approved / rejected.
-// Actual final submissions use approvalStatus draft.
-// ─────────────────────────────────────────────────────────────────────────────
-const isActualFinalSubmission = (s) => {
-  const status = s?.approvalStatus || 'draft';
-  return !['pending_review', 'approved', 'rejected'].includes(status);
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Safely increment a student's submissionsUsed count for quota tracking
-// ─────────────────────────────────────────────────────────────────────────────
 const incrementSubmissionsUsed = async (userId) => {
   try {
     await User.findByIdAndUpdate(userId, { $inc: { 'subscription.submissionsUsed': 1 } });
@@ -81,39 +58,23 @@ const incrementSubmissionsUsed = async (userId) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Check if a student is within their submission quota
-// Returns { allowed: true } or { allowed: false, message: '...' }
-// ─────────────────────────────────────────────────────────────────────────────
 const checkSubmissionLimit = async (userId) => {
   const user = await User.findById(userId).select('subscription');
   if (!user) return { allowed: false, message: 'User not found' };
-
-  const plan   = user.subscription?.plan   || 'free';
-  const limit  = user.subscription?.submissionsLimit ?? 10;
-  const used   = user.subscription?.submissionsUsed  ?? 0;
-
-  // 999 = unlimited (institution / pro plans)
+  const plan  = user.subscription?.plan   || 'free';
+  const limit = user.subscription?.submissionsLimit ?? 10;
+  const used  = user.subscription?.submissionsUsed  ?? 0;
   if (limit >= 999) return { allowed: true };
-
   const endDate = user.subscription?.endDate;
-  if (endDate && new Date(endDate) < new Date() && plan !== 'free') {
+  if (endDate && new Date(endDate) < new Date() && plan !== 'free')
     return { allowed: false, message: 'Your subscription has expired. Please renew to continue submitting.' };
-  }
-
-  if (used >= limit) {
-    return {
-      allowed: false,
-      message: `You have reached your ${limit} submission limit for the ${plan} plan. Please upgrade to continue.`
-    };
-  }
-
+  if (used >= limit)
+    return { allowed: false, message: `You have reached your ${limit} submission limit for the ${plan} plan. Please upgrade to continue.` };
   return { allowed: true };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → POST /submissions
-// Submit a regular (non-approval) assignment directly
 // ─────────────────────────────────────────────────────────────────────────────
 exports.submit = async (req, res) => {
   try {
@@ -126,7 +87,6 @@ exports.submit = async (req, res) => {
     }
 
     const { moduleCode, moduleName, assignmentName, assignmentId, instructions, description } = req.body;
-
     let rubric = [];
     try { rubric = JSON.parse(req.body.rubric || '[]'); } catch {}
 
@@ -151,7 +111,6 @@ exports.submit = async (req, res) => {
     ].filter(Boolean).join('\n');
 
     runAIAnalysis(sub._id, `submissions/${req.file.filename}`, assignmentName || req.file.originalname, moduleCode || '', moduleName || '', rubric, context);
-
     res.status(201).json({ success: true, submission: sub });
   } catch (err) {
     console.error('SUBMIT ERROR:', err.message);
@@ -161,16 +120,12 @@ exports.submit = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → POST /submissions/submit-for-approval
-// Submit an assignment for pre-approval review by the lecturer
-// Creates submission with approvalStatus = 'pending_review'
-// Notifies all lecturers immediately so it appears in Assignment Requests page
 // ─────────────────────────────────────────────────────────────────────────────
 exports.submitForApproval = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
     const { moduleCode, moduleName, assignmentName, instructions, description } = req.body;
-
     let rubric = [];
     try { rubric = JSON.parse(req.body.rubric || '[]'); } catch {}
 
@@ -183,11 +138,10 @@ exports.submitForApproval = async (req, res) => {
       filePath:       `submissions/${req.file.filename}`,
       fileType:       req.file.mimetype,
       aiAnalysis:     { status: 'pending' },
-      approvalStatus: 'pending_review',  // immediately enters review queue
+      approvalStatus: 'pending_review',
       status:         'Pending',
     });
 
-    // Notify every lecturer so it appears in their Assignment Requests list
     try {
       const lecturers = await User.find({ role: 'lecturer' });
       for (const lecturer of lecturers) {
@@ -199,18 +153,14 @@ exports.submitForApproval = async (req, res) => {
           meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
         });
       }
-    } catch (notifErr) {
-      console.error('⚠️ Notification error (non-fatal):', notifErr.message);
-    }
+    } catch (notifErr) { console.error('⚠️ Notification error (non-fatal):', notifErr.message); }
 
     const context = [
       description  ? `Assignment Description: ${description}`  : '',
       instructions ? `Lecturer Instructions: ${instructions}` : '',
     ].filter(Boolean).join('\n');
 
-    // Kick off AI analysis so it's ready before lecturer opens the review page
     runAIAnalysis(sub._id, `submissions/${req.file.filename}`, assignmentName || req.file.originalname, moduleCode || '', moduleName || '', rubric, context);
-
     res.status(201).json({ success: true, submission: sub });
   } catch (err) {
     console.error('❌ SUBMIT FOR APPROVAL ERROR:', err.message);
@@ -220,9 +170,7 @@ exports.submitForApproval = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → GET /submissions/pending-approvals
-// Returns ALL pre-approval submissions (pending + approved + rejected)
-// so the Assignment Requests page shows full history with correct stat counts
-// Also attaches assignment rubric criteria for the marking panel
+// Returns all pre-approval submissions for the Pre-Approvals page
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getPendingApprovals = async (req, res) => {
   try {
@@ -230,10 +178,7 @@ exports.getPendingApprovals = async (req, res) => {
       .find({ approvalStatus: { $in: ['pending_review', 'approved', 'rejected'] } })
       .populate('student', 'username email studentId')
       .sort({ submittedAt: -1 });
-
-    // Attach rubric criteria from matching assignments so marking panel works
     const withRubrics = await attachRubrics(submissions);
-
     res.json({ success: true, submissions: withRubrics });
   } catch (err) {
     console.error('GET PENDING APPROVALS ERROR:', err.message);
@@ -243,71 +188,46 @@ exports.getPendingApprovals = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → PATCH /submissions/:id/mark-and-decide
-//
-// NEW: The key endpoint for the Assignment Requests review panel
-// Combines marking (rubric scores + feedback) with approve/reject in one call
-//
-// decision = 'approve':
-//   → saves marks, sets status = Graded, published = true
-//   → notifies student: "Approved & Marked — you can now submit final version"
-//
-// decision = 'reject':
-//   → saves feedback, sets status = Rejected
-//   → notifies student: "Needs revision — please update and resubmit"
 // ─────────────────────────────────────────────────────────────────────────────
 exports.markAndDecide = async (req, res) => {
   try {
     const { decision, feedback } = req.body;
-
-    if (!['approve', 'reject'].includes(decision)) {
+    if (!['approve', 'reject'].includes(decision))
       return res.status(400).json({ success: false, message: 'decision must be "approve" or "reject"' });
-    }
-
-    if (!feedback?.trim()) {
+    if (!feedback?.trim())
       return res.status(400).json({ success: false, message: 'Please add a review comment before saving the decision.' });
-    }
 
     const existing = await Submission.findById(req.params.id).populate('student', 'username email');
     if (!existing) return res.status(404).json({ success: false, message: 'Submission not found' });
 
     const updateData = {
-      lecturer: req.user._id,
-      approvalFeedback: feedback.trim(),
-      status: 'Pending',
-      published: false,
+      lecturer: req.user._id, approvalFeedback: feedback.trim(),
+      status: 'Pending', published: false,
     };
 
     if (decision === 'approve') {
       updateData.approvalStatus = 'approved';
-      updateData.approvedAt = new Date();
-      updateData.rejectedAt = undefined;
+      updateData.approvedAt     = new Date();
+      updateData.rejectedAt     = undefined;
     } else {
       updateData.approvalStatus = 'rejected';
-      updateData.rejectedAt = new Date();
-      updateData.approvedAt = undefined;
+      updateData.rejectedAt     = new Date();
+      updateData.approvedAt     = undefined;
     }
 
     const sub = await Submission.findByIdAndUpdate(req.params.id, updateData, { new: true })
       .populate('student', 'username email');
 
     if (sub.student?._id) {
-      if (decision === 'approve') {
-        await createNotification({
-          userId: sub.student._id,
-          type: 'submission_approved',
-          title: '✅ Draft Approved',
-          message: `Your draft for "${sub.assignmentName}" has been approved. Comment: ${feedback.trim()}`,
-          meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode },
-        });
-      } else {
-        await createNotification({
-          userId: sub.student._id,
-          type: 'submission_rejected',
-          title: '↩️ Draft Needs Revision',
-          message: `Your draft for "${sub.assignmentName}" needs revision. Comment: ${feedback.trim()}`,
-          meta: { submissionId: sub._id, assignmentName: sub.assignmentName, feedback: feedback.trim() },
-        });
-      }
+      await createNotification({
+        userId:  sub.student._id,
+        type:    decision === 'approve' ? 'submission_approved' : 'submission_rejected',
+        title:   decision === 'approve' ? '✅ Draft Approved' : '↩️ Draft Needs Revision',
+        message: decision === 'approve'
+          ? `Your draft for "${sub.assignmentName}" has been approved. Comment: ${feedback.trim()}`
+          : `Your draft for "${sub.assignmentName}" needs revision. Comment: ${feedback.trim()}`,
+        meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode },
+      });
     }
 
     res.json({ success: true, submission: sub });
@@ -317,107 +237,62 @@ exports.markAndDecide = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LECTURER → PATCH /submissions/:id/approve  (kept for backwards compatibility)
-// Simple approve without marking — used by Submission Hub if needed
-// ─────────────────────────────────────────────────────────────────────────────
 exports.approveSubmission = async (req, res) => {
   try {
     const { feedback = 'Your draft has been approved.' } = req.body;
-
     const sub = await Submission.findByIdAndUpdate(
       req.params.id,
-      {
-        approvalStatus: 'approved',
-        approvalFeedback: feedback,
-        approvedAt: new Date(),
-        rejectedAt: undefined,
-        status: 'Pending',
-        published: false,
-      },
+      { approvalStatus: 'approved', approvalFeedback: feedback, approvedAt: new Date(), rejectedAt: undefined, status: 'Pending', published: false },
       { new: true }
     ).populate('student', 'username email');
-
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
-
-    try {
-      await createNotification({
-        userId:  sub.student._id,
-        type:    'submission_approved',
-        title:   'Draft Approved',
-        message: `Your draft for "${sub.assignmentName}" has been approved. Comment: ${feedback}`,
-        meta:    { submissionId: sub._id, assignmentName: sub.assignmentName },
-      });
-    } catch {}
-
+    try { await createNotification({ userId: sub.student._id, type: 'submission_approved', title: 'Draft Approved', message: `Your draft for "${sub.assignmentName}" has been approved. Comment: ${feedback}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName } }); } catch {}
     res.json({ success: true, submission: sub });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LECTURER → PATCH /submissions/:id/reject  (kept for backwards compatibility)
-// Simple reject with feedback — used by Submission Hub if needed
-// ─────────────────────────────────────────────────────────────────────────────
 exports.rejectSubmission = async (req, res) => {
   try {
     const { feedback = '' } = req.body;
-
-    if (!feedback.trim()) {
-      return res.status(400).json({ success: false, message: 'Feedback is required when rejecting a draft.' });
-    }
-
+    if (!feedback.trim()) return res.status(400).json({ success: false, message: 'Feedback is required when rejecting a draft.' });
     const sub = await Submission.findByIdAndUpdate(
       req.params.id,
-      {
-        approvalStatus: 'rejected',
-        approvalFeedback: feedback.trim(),
-        rejectedAt: new Date(),
-        approvedAt: undefined,
-        status: 'Pending',
-        published: false,
-      },
+      { approvalStatus: 'rejected', approvalFeedback: feedback.trim(), rejectedAt: new Date(), approvedAt: undefined, status: 'Pending', published: false },
       { new: true }
     ).populate('student', 'username email');
-
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
-
-    try {
-      await createNotification({
-        userId:  sub.student._id,
-        type:    'submission_rejected',
-        title:   'Draft Needs Revision',
-        message: `Your draft for "${sub.assignmentName}" needs revision. Comment: ${feedback.trim()}`,
-        meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, feedback: feedback.trim() },
-      });
-    } catch {}
-
+    try { await createNotification({ userId: sub.student._id, type: 'submission_rejected', title: 'Draft Needs Revision', message: `Your draft for "${sub.assignmentName}" needs revision. Comment: ${feedback.trim()}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, feedback: feedback.trim() } }); } catch {}
     res.json({ success: true, submission: sub });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → GET /submissions/my
-// Get all submissions belonging to the logged-in student
-// Includes rubrics so student reports page can show criteria
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getMySubmissions = async (req, res) => {
   try {
     const submissions = await Submission.find({ student: req.user._id }).sort({ submittedAt: -1 });
     const withRubrics = await attachRubrics(submissions);
     res.json({ success: true, submissions: withRubrics });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → GET /submissions/all
-// Get all submissions across all students with rubrics attached
+//
+// Marking & Feedback ONLY shows direct submissions from the Assignments tab.
+// These always have approvalStatus === 'draft'.
+//
+// Pre-approval submissions (pending_review / approved / rejected) belong
+// exclusively to the Pre-Approvals page and must NEVER appear here.
+//
+// Flow summary:
+//   Pre-Approval tab  → submitForApproval → approvalStatus: 'pending_review'
+//                     → lecturer approves → approvalStatus: 'approved'
+//                     → shown in Pre-Approvals page ONLY
+//
+//   Assignments tab   → submit            → approvalStatus: 'draft'
+//                     → shown in Marking & Feedback ONLY
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getAllSubmissions = async (req, res) => {
   try {
@@ -436,7 +311,6 @@ exports.getAllSubmissions = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET → /submissions/:id
-// Get a single submission by ID with rubric attached
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getSubmission = async (req, res) => {
   try {
@@ -444,16 +318,11 @@ exports.getSubmission = async (req, res) => {
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
     const withRubrics = await attachRubrics([sub]);
     res.json({ success: true, submission: withRubrics[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → PUT /submissions/:id/grade
-// Grade a submission from the Marking & Feedback page
-// published: false = save draft only (student cannot see yet)
-// published: true  = release marks to student, send notification once only
 // ─────────────────────────────────────────────────────────────────────────────
 exports.gradeSubmission = async (req, res) => {
   try {
@@ -463,19 +332,16 @@ exports.gradeSubmission = async (req, res) => {
     const existing = await Submission.findById(req.params.id).populate('student', 'username email');
     if (!existing) return res.status(404).json({ success: false, message: 'Submission not found' });
 
-    if (['pending_review', 'approved', 'rejected'].includes(existing.approvalStatus)) {
-      return res.status(400).json({ success: false, message: 'This is a pre-approval draft. It cannot be marked here. Student must submit the final assignment first.' });
+    if (existing.approvalStatus === 'pending_review') {
+      return res.status(400).json({ success: false, message: 'This submission is still in the pre-approval queue and cannot be graded yet.' });
     }
 
-    // Guard: prevent sending duplicate "marks released" notifications
     const wasAlreadyPublished = existing.published === true;
 
     let parsedRubricScores = [];
     if (Array.isArray(rubricScores) && rubricScores.length > 0) {
       parsedRubricScores = rubricScores.map(r => ({
-        criterion:  r.criterion  || '',
-        score:      Number(r.score)    || 0,
-        maxScore:   Number(r.maxScore) || 0,
+        criterion: r.criterion || '', score: Number(r.score) || 0, maxScore: Number(r.maxScore) || 0,
         percentage: r.maxScore > 0 ? Math.round((Number(r.score) / Number(r.maxScore)) * 100) : 0,
       }));
     }
@@ -486,7 +352,6 @@ exports.gradeSubmission = async (req, res) => {
       ...(corrections && { corrections }),
     };
 
-    // Only set Graded/published on FIRST publish — never flip back
     if (isPublishing && !wasAlreadyPublished) {
       updateData.status    = 'Graded';
       updateData.published = true;
@@ -496,7 +361,6 @@ exports.gradeSubmission = async (req, res) => {
     const sub = await Submission.findByIdAndUpdate(req.params.id, updateData, { new: true })
       .populate('student', 'username email');
 
-    // Notify student only the first time marks are released
     if (isPublishing && !wasAlreadyPublished && sub.student?._id) {
       const scoreText = score != null ? `You scored ${score}%` : '';
       const gradeText = grade ? ` (${grade})` : '';
@@ -518,12 +382,10 @@ exports.gradeSubmission = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → PUT /submissions/:id/accept-regrade
-// Accept a student's regrade request with updated scores
 // ─────────────────────────────────────────────────────────────────────────────
 exports.acceptRegrade = async (req, res) => {
   try {
     const { score, grade, feedback, rubricScores } = req.body;
-
     let parsedRubricScores = [];
     if (Array.isArray(rubricScores) && rubricScores.length > 0) {
       parsedRubricScores = rubricScores.map(r => ({
@@ -531,68 +393,44 @@ exports.acceptRegrade = async (req, res) => {
         percentage: r.maxScore > 0 ? Math.round((Number(r.score) / Number(r.maxScore)) * 100) : 0,
       }));
     }
-
     const sub = await Submission.findByIdAndUpdate(
       req.params.id,
-      {
-        score: Number(score) || 0, grade: grade || '', feedback: feedback || '',
-        rubricScores: parsedRubricScores, status: 'Graded', published: true,
-        gradedAt: new Date(), regrade: { status: 'accepted', reviewedAt: new Date() }
-      },
+      { score: Number(score) || 0, grade: grade || '', feedback: feedback || '', rubricScores: parsedRubricScores, status: 'Graded', published: true, gradedAt: new Date(), regrade: { status: 'accepted', reviewedAt: new Date() } },
       { new: true }
     ).populate('student', 'username email');
-
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
-
     if (sub.student?._id) {
       const scoreText = score != null ? `New score: ${score}%` : '';
       const gradeText = grade ? ` (${grade})` : '';
-      await createNotification({
-        userId: sub.student._id, type: 'regrade_accepted', title: 'Re-grade Request Accepted',
-        message: `Your re-grade request for "${sub.assignmentName}" has been accepted.${scoreText ? ' ' + scoreText + gradeText + '.' : ''}`,
-        meta:   { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, score, grade },
-      });
+      await createNotification({ userId: sub.student._id, type: 'regrade_accepted', title: 'Re-grade Request Accepted', message: `Your re-grade request for "${sub.assignmentName}" has been accepted.${scoreText ? ' ' + scoreText + gradeText + '.' : ''}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, score, grade } });
     }
-
     res.json({ success: true, submission: sub });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → POST /submissions/:id/reanalyse
-// Trigger a fresh AI analysis on an existing submission
 // ─────────────────────────────────────────────────────────────────────────────
 exports.reanalyseSubmission = async (req, res) => {
   try {
     const sub = await Submission.findById(req.params.id);
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
-
     let rubric = [], context = '';
     try {
       const assignment = await Assignment.findOne({ title: sub.assignmentName });
       if (assignment) {
         rubric  = assignment.rubric || [];
-        context = [
-          assignment.description  ? `Assignment Description: ${assignment.description}`  : '',
-          assignment.instructions ? `Lecturer Instructions: ${assignment.instructions}` : '',
-        ].filter(Boolean).join('\n');
+        context = [assignment.description ? `Assignment Description: ${assignment.description}` : '', assignment.instructions ? `Lecturer Instructions: ${assignment.instructions}` : ''].filter(Boolean).join('\n');
       }
     } catch {}
-
     await Submission.findByIdAndUpdate(req.params.id, { aiAnalysis: { status: 'pending' } });
     runAIAnalysis(sub._id, sub.filePath, sub.assignmentName, sub.moduleCode, sub.moduleName, rubric, context);
     res.json({ success: true, message: 'Re-analysis started. Refresh in a few seconds.' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → PUT /submissions/:id
-// Replace/update a submission file before the deadline
-// Resets all grading fields and re-enters pending_review so lecturer re-marks
 // ─────────────────────────────────────────────────────────────────────────────
 exports.updateSubmission = async (req, res) => {
   try {
@@ -602,54 +440,42 @@ exports.updateSubmission = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Not authorised' });
 
     if (req.file) {
-      // Delete old file from disk before swapping in the new one
       if (sub.filePath) {
         const oldAbsolute = path.join(__dirname, '..', sub.filePath);
-        if (fs.existsSync(oldAbsolute)) {
-          try { fs.unlinkSync(oldAbsolute); } catch (e) { console.warn('Could not delete old file:', e.message); }
-        }
+        if (fs.existsSync(oldAbsolute)) { try { fs.unlinkSync(oldAbsolute); } catch (e) {} }
       }
-
       sub.fileName   = req.file.originalname;
       sub.filePath   = `submissions/${req.file.filename}`;
       sub.fileType   = req.file.mimetype;
       sub.aiAnalysis = { status: 'pending' };
-
       let rubric = [];
       try { rubric = JSON.parse(req.body.rubric || '[]'); } catch {}
-      const context = [
-        req.body.description  ? `Assignment Description: ${req.body.description}`  : '',
-        req.body.instructions ? `Lecturer Instructions: ${req.body.instructions}` : '',
-      ].filter(Boolean).join('\n');
-
+      const context = [req.body.description ? `Assignment Description: ${req.body.description}` : '', req.body.instructions ? `Lecturer Instructions: ${req.body.instructions}` : ''].filter(Boolean).join('\n');
       runAIAnalysis(sub._id, `submissions/${req.file.filename}`, sub.assignmentName, sub.moduleCode, sub.moduleName, rubric, context);
     }
 
-    // Reset grading and approval so lecturer reviews and marks the new file
-    sub.status         = 'Pending';
-    sub.published      = false;
-    sub.score          = undefined;
-    sub.grade          = undefined;
-    sub.feedback       = undefined;
-    sub.gradedAt       = undefined;
-    sub.rubricScores   = [];
-    sub.approvalStatus = 'pending_review';  // back into the review queue
-
+    sub.status = 'Pending'; sub.published = false; sub.score = undefined;
+    sub.grade = undefined; sub.feedback = undefined; sub.gradedAt = undefined;
+    sub.rubricScores = [];
+    // FIX: Keep the original approvalStatus — don't override 'draft' with 'pending_review'.
+    // Direct submissions (Assignments tab) stay as 'draft' so they remain in Marking & Feedback.
+    // Only pre-approval submissions should ever be 'pending_review'.
+    if (!sub.approvalStatus || sub.approvalStatus === 'draft') {
+      sub.approvalStatus = 'draft';  // direct submission — stays in Marking & Feedback
+    }
+    // If it was a pre-approval submission being revised, keep it in the review queue
+    // (approvalStatus stays as-is: 'pending_review' / 'rejected')
     await sub.save();
 
-    // Notify lecturers that a revised submission is ready for review
-    try {
-      const lecturers = await User.find({ role: 'lecturer' });
-      for (const lecturer of lecturers) {
-        await createNotification({
-          userId:  lecturer._id,
-          type:    'approval_requested',
-          title:   'Submission Revised — Needs Review',
-          message: `A student revised their submission for "${sub.assignmentName}" (${sub.moduleCode}). Please re-review.`,
-          meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode },
-        });
-      }
-    } catch (notifErr) { console.error('⚠️ Notification error:', notifErr.message); }
+    // Only notify lecturers if this is a pre-approval revision
+    if (sub.approvalStatus === 'pending_review') {
+      try {
+        const lecturers = await User.find({ role: 'lecturer' });
+        for (const lecturer of lecturers) {
+          await createNotification({ userId: lecturer._id, type: 'approval_requested', title: 'Submission Revised — Needs Review', message: `A student revised their submission for "${sub.assignmentName}" (${sub.moduleCode}). Please re-review.`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode } });
+        }
+      } catch (notifErr) { console.error('⚠️ Notification error:', notifErr.message); }
+    }
 
     res.json({ success: true, message: 'Submission updated successfully.', submission: sub });
   } catch (err) {
@@ -660,7 +486,6 @@ exports.updateSubmission = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → DELETE /submissions/:id
-// Delete a submission and reclaim the quota slot
 // ─────────────────────────────────────────────────────────────────────────────
 exports.deleteSubmission = async (req, res) => {
   try {
@@ -668,80 +493,48 @@ exports.deleteSubmission = async (req, res) => {
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
     if (sub.student.toString() !== req.user._id.toString())
       return res.status(401).json({ success: false, message: 'Not authorised' });
-
-    // Remove the physical file from disk
     if (sub.filePath) {
       const absPath = path.join(__dirname, '..', sub.filePath);
-      if (fs.existsSync(absPath)) {
-        try { fs.unlinkSync(absPath); } catch (e) { console.warn('Could not delete file:', e.message); }
-      }
+      if (fs.existsSync(absPath)) { try { fs.unlinkSync(absPath); } catch (e) {} }
     }
-
     await sub.deleteOne();
-
-    // Return the quota slot to the student
-    try {
-      await User.findByIdAndUpdate(req.user._id, { $inc: { 'subscription.submissionsUsed': -1 } });
-    } catch (e) { console.warn('Could not decrement submissionsUsed:', e.message); }
-
+    try { await User.findByIdAndUpdate(req.user._id, { $inc: { 'subscription.submissionsUsed': -1 } }); } catch (e) {}
     res.json({ success: true, message: 'Submission removed successfully' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → GET /submissions/stats
-// Dashboard stats: total, graded, pending, average score, per-module breakdown
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
   try {
     const submissions = await Submission.find({
-      student: req.user._id,
-      approvalStatus: { $nin: ['pending_review', 'approved', 'rejected'] },
+      student:        req.user._id,
+      approvalStatus: { $nin: ['pending_review', 'rejected'] },
     });
-
-    const graded   = submissions.filter(s => s.status === 'Graded' && s.published === true);
-    const total    = submissions.length;
-    const pending  = submissions.filter(s => s.status === 'Pending').length;
+    const graded  = submissions.filter(s => s.status === 'Graded' && s.published === true);
+    const total   = submissions.length;
+    const pending = submissions.filter(s => s.status === 'Pending').length;
     const avgScore = graded.length > 0
-      ? Math.round(graded.reduce((a, s) => a + (Number(s.score) || 0), 0) / graded.length)
-      : 0;
-
-    const getGrade = p => {
-      if (p >= 90) return 'A+'; if (p >= 85) return 'A';  if (p >= 80) return 'A-';
-      if (p >= 75) return 'B+'; if (p >= 70) return 'B';  if (p >= 65) return 'B-';
-      if (p >= 60) return 'C+'; if (p >= 55) return 'C';  return 'F';
-    };
-
+      ? Math.round(graded.reduce((a, s) => a + (Number(s.score) || 0), 0) / graded.length) : 0;
+    const getGrade = p => { if (p>=90)return'A+';if(p>=85)return'A';if(p>=80)return'A-';if(p>=75)return'B+';if(p>=70)return'B';if(p>=65)return'B-';if(p>=60)return'C+';if(p>=55)return'C';return'F'; };
     const moduleMap = {};
     for (const s of graded) {
       const key = s.moduleCode || 'Unknown';
       if (!moduleMap[key]) moduleMap[key] = { moduleCode: key, moduleName: s.moduleName || key, scores: [] };
       moduleMap[key].scores.push(Number(s.score) || 0);
     }
-
     const modules = Object.values(moduleMap).map(m => {
       const avg = Math.round(m.scores.reduce((a, b) => a + b, 0) / m.scores.length);
       return { moduleCode: m.moduleCode, moduleName: m.moduleName, average: avg, grade: getGrade(avg) };
     });
-
-    const bestModule = modules.length > 0
-      ? modules.reduce((best, m) => m.average > best.average ? m : best, modules[0])
-      : null;
-
-    res.json({
-      success: true,
-      stats: { average: avgScore, grade: getGrade(avgScore), total, graded: graded.length, pending, modules, bestModule },
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+    const bestModule = modules.length > 0 ? modules.reduce((best, m) => m.average > best.average ? m : best, modules[0]) : null;
+    res.json({ success: true, stats: { average: avgScore, grade: getGrade(avgScore), total, graded: graded.length, pending, modules, bestModule } });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT → POST /submissions/:id/request-regrade
-// Request a re-grade for an already-published submission
 // ─────────────────────────────────────────────────────────────────────────────
 exports.requestRegrade = async (req, res) => {
   try {
@@ -750,20 +543,13 @@ exports.requestRegrade = async (req, res) => {
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
     if (sub.student._id.toString() !== req.user._id.toString())
       return res.status(401).json({ success: false, message: 'Not authorised' });
-
     await Submission.findByIdAndUpdate(req.params.id, { regrade: { status: 'pending', reason: reason || '', requestedAt: new Date() } });
-
     try {
       const lecturers = await User.find({ role: 'lecturer' });
       for (const lecturer of lecturers) {
-        await createNotification({
-          userId: lecturer._id, type: 'regrade_requested', title: 'Re-grade Request',
-          message: `${sub.student.username || 'A student'} requested a re-grade for "${sub.assignmentName}"${sub.moduleCode ? ` (${sub.moduleCode})` : ''}.${reason ? ` Reason: ${reason}` : ''}`,
-          meta:   { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, studentName: sub.student.username, reason },
-        });
+        await createNotification({ userId: lecturer._id, type: 'regrade_requested', title: 'Re-grade Request', message: `${sub.student.username || 'A student'} requested a re-grade for "${sub.assignmentName}"${sub.moduleCode ? ` (${sub.moduleCode})` : ''}.${reason ? ` Reason: ${reason}` : ''}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, studentName: sub.student.username, reason } });
       }
     } catch (notifErr) { console.error('⚠️ Regrade notification error:', notifErr.message); }
-
     res.json({ success: true, message: 'Re-grade request submitted.' });
   } catch (err) {
     console.error('REQUEST REGRADE ERROR:', err.message);
@@ -773,17 +559,13 @@ exports.requestRegrade = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET → /submissions/:id/preview
-// Preview the text content of a submitted document (docx or txt)
-// Returns previewAvailable: false for PDF and other binary types
 // ─────────────────────────────────────────────────────────────────────────────
 exports.previewSubmission = async (req, res) => {
   try {
     const sub = await Submission.findById(req.params.id);
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
-
     const filePath = path.join(__dirname, '..', sub.filePath);
     const ext      = path.extname(filePath).toLowerCase();
-
     if (ext === '.docx') {
       const result = await mammoth.extractRawText({ path: filePath });
       return res.json({ success: true, type: ext, previewAvailable: true, text: result.value, fileUrl: `/submissions/${path.basename(filePath)}` });
@@ -792,9 +574,6 @@ exports.previewSubmission = async (req, res) => {
       const text = fs.readFileSync(filePath, 'utf8');
       return res.json({ success: true, type: ext, previewAvailable: true, text, fileUrl: `/submissions/${path.basename(filePath)}` });
     }
-
     res.json({ success: true, type: ext, previewAvailable: false, fileUrl: `/submissions/${path.basename(filePath)}`, message: 'Preview not available for this file type.' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };

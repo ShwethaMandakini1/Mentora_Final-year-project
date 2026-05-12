@@ -283,18 +283,14 @@ export default function LecturerMarking() {
       const subs = r.data.submissions || [];
 
       // ── CORRECT FLOW ────────────────────────────────────────────────────
-      // Marking & Feedback shows submissions that:
-      //   1. Have been approved from Pre-Approvals (approvalStatus === 'approved')
-      //      OR were submitted directly without the pre-approval flow (approvalStatus === 'draft' or missing)
-      //   2. Have NOT yet had final marks published (published !== true)
-      //
-      // FIX: The old code required approvalStatus === 'draft' which excluded
-      // every pre-approval submission. Now we include 'approved' ones too.
+      // Marking & Feedback shows direct submissions (Assignments tab) only.
+      // approvalStatus === 'draft' for new submissions, null/undefined for legacy.
+      // Excludes anything from the pre-approval flow.
+      const PRE_APPROVAL = ['pending_review', 'approved', 'rejected'];
       const markingQueue = subs.filter(s => {
-        const status          = s.approvalStatus || 'draft';
-        const isReadyToMark   = status === 'approved' || status === 'draft';
+        const notPreApproval  = !PRE_APPROVAL.includes(s.approvalStatus);
         const notYetPublished = s.published !== true;
-        return isReadyToMark && notYetPublished;
+        return notPreApproval && notYetPublished;
       });
 
       setSubmissions(markingQueue);
@@ -547,7 +543,7 @@ export default function LecturerMarking() {
             <p>
               No submissions waiting for marking.<br />
               <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                Approved pre-approval submissions will appear here once the student uploads their final file.
+                Submissions made from the student's Assignments tab will appear here.
               </span>
             </p>
           </div>
@@ -588,12 +584,6 @@ export default function LecturerMarking() {
                     <span className={`ios-badge ${selected?.status === 'Graded' ? 'ios-badge--graded' : 'ios-badge--pending'}`}>
                       {selected?.status || 'Pending'}
                     </span>
-                    {/* Show approval origin badge */}
-                    {selected?.approvalStatus === 'approved' && (
-                      <span className="ios-badge ios-badge--graded" style={{ background: '#d1fae5', color: '#065f46' }}>
-                        ✓ Pre-Approved
-                      </span>
-                    )}
                     {hasAIData && (
                       <span className="ios-badge ios-badge--pending" style={{ background: 'rgba(0,150,199,0.10)', color: 'var(--sky)' }}>
                         <Icons.Sparkle />
