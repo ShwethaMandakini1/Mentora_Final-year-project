@@ -8,9 +8,7 @@
  */
 
 const { generateInsights } = require('../ai/insightGenerator');
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const Groq = require('groq-sdk');
 
 // ── POST /api/ai/insights ─────────────────────────────────────────────────────
 exports.getInsights = async (req, res) => {
@@ -104,16 +102,17 @@ Rules:
 - Do NOT mention the numerical scores directly in the feedback text.
 - Output only the feedback paragraphs — no headings, no bullet points, no preamble.`;
 
-    // ── Call Claude API ───────────────────────────────────────────────────
-    const response = await client.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 800,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
+    // ── Call Groq API (same model used by gradeService) ─────────────────
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const completion = await groq.chat.completions.create({
+      messages:    [{ role: 'user', content: prompt }],
+      model:       'llama-3.3-70b-versatile',
+      temperature: 0.4,
+      max_tokens:  1000,
     });
 
-    const feedback = response.content?.[0]?.text?.trim() || '';
+    const feedback = completion.choices[0]?.message?.content?.trim() || '';
 
     if (!feedback) {
       return res.status(500).json({ success: false, message: 'AI returned an empty response. Please try again.' });
@@ -124,8 +123,8 @@ Rules:
     console.error('AI MARKING FEEDBACK ERROR:', err.message);
     res.status(500).json({
       success: false,
-      message: err.message?.includes('API')
-        ? 'AI service error. Please check your API key and try again.'
+      message: err.message?.includes('auth') || err.message?.includes('API')
+        ? 'AI service error. Please check GROQ_API_KEY in your .env file.'
         : 'Failed to generate feedback. Please try again.',
     });
   }

@@ -7,6 +7,98 @@ import './dashboard.css';
 const API_URL = import.meta.env.VITE_API_URL;
 const BASE    = import.meta.env.VITE_API_URL.replace('/api', '');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DocViewer — handles PDF and DOCX preview locally without Google Docs
+// PDF  → direct <iframe> (browsers render natively)
+// DOCX → calls backend /submissions/:id/preview which uses mammoth → HTML
+// ─────────────────────────────────────────────────────────────────────────────
+function DocViewer({ submissionId, fileUrl, ext, fileName }) {
+  const [docxHtml,    setDocxHtml]    = React.useState('');
+  const [docxLoading, setDocxLoading] = React.useState(false);
+  const [docxError,   setDocxError]   = React.useState('');
+
+  React.useEffect(() => {
+    setDocxHtml(''); setDocxError('');
+    if ((ext === 'docx' || ext === 'doc') && submissionId) {
+      setDocxLoading(true);
+      const token = localStorage.getItem('token');
+      fetch(`${API_URL}/submissions/${submissionId}/preview`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.previewAvailable && data.text) {
+            // Convert plain text to simple HTML preserving line breaks
+            setDocxHtml(
+              '<div style="font-family:Calibri,Arial,sans-serif;font-size:14px;line-height:1.7;color:#1e293b;padding:32px 48px;max-width:800px;margin:0 auto">' +
+              data.text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br/>') +
+              '</div>'
+            );
+          } else {
+            setDocxError('Preview not available for this file. Use the download link below.');
+          }
+        })
+        .catch(() => setDocxError('Could not load document preview.'))
+        .finally(() => setDocxLoading(false));
+    }
+  }, [submissionId, ext]);
+
+  if (!fileUrl) return (
+    <div className="ios-empty-state" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', height: 120, marginBottom: 12, padding: 20 }}>
+      <Icons.Document />
+      <p>{fileName || 'No file attached'}</p>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {/* PDF — direct iframe, works on localhost */}
+      {ext === 'pdf' && (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', height: 380 }}>
+          <iframe src={fileUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="PDF Preview" />
+        </div>
+      )}
+
+      {/* DOCX — rendered via backend mammoth extraction */}
+      {(ext === 'docx' || ext === 'doc') && (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'auto', height: 380, background: '#f8fafc' }}>
+          {docxLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: 'var(--text-muted)' }}>
+              <div className="ios-spinner" />
+              <p style={{ margin: 0, fontSize: 13 }}>Loading document…</p>
+            </div>
+          )}
+          {!docxLoading && docxError && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-muted)', padding: 24, textAlign: 'center' }}>
+              <Icons.Document />
+              <p style={{ margin: 0, fontSize: 13 }}>{docxError}</p>
+            </div>
+          )}
+          {!docxLoading && docxHtml && (
+            <div dangerouslySetInnerHTML={{ __html: docxHtml }} />
+          )}
+        </div>
+      )}
+
+      {/* Other file types */}
+      {ext !== 'pdf' && ext !== 'docx' && ext !== 'doc' && (
+        <div className="ios-empty-state" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', height: 120, marginBottom: 0, padding: 20 }}>
+          <Icons.Document />
+          <p style={{ margin: 0 }}>Preview not available for .{ext} files</p>
+        </div>
+      )}
+
+      {/* Open / download link always shown */}
+      <a href={fileUrl} target="_blank" rel="noreferrer" download={fileName}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, marginBottom: 8, fontSize: 13, fontWeight: 500, color: 'var(--ocean)', textDecoration: 'none' }}>
+        <Icons.External /> Open full file in new tab
+      </a>
+    </div>
+  );
+}
+
 function getGrade(pct) {
   if (pct >= 90) return 'A+'; if (pct >= 85) return 'A';  if (pct >= 80) return 'A-';
   if (pct >= 75) return 'B+'; if (pct >= 70) return 'B';  if (pct >= 65) return 'B-';
@@ -508,13 +600,8 @@ export default function LecturerMarking() {
     publish ? setPublishing(false) : setSaving(false);
   };
 
-  const fileUrl   = selected?.filePath ? buildFileUrl(selected.filePath) : null;
-  const ext       = getExt(selected?.filePath || '');
-  const viewerUrl = fileUrl
-    ? (ext === 'docx' || ext === 'doc'
-        ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
-        : fileUrl)
-    : null;
+  const fileUrl = selected?.filePath ? buildFileUrl(selected.filePath) : null;
+  const ext     = getExt(selected?.filePath || '');
 
   const TABS = [
     { key: 'mark',     label: 'Manual Marking' },
@@ -593,28 +680,12 @@ export default function LecturerMarking() {
                   </div>
                 </div>
 
-                {viewerUrl ? (
-                  <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 12, height: 320 }}>
-                    <iframe src={viewerUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="Submission" />
-                  </div>
-                ) : (
-                  <div className="ios-empty-state" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', height: 120, marginBottom: 12, padding: 20 }}>
-                    <Icons.Document />
-                    <p>{selected?.fileName || 'No file attached'}</p>
-                  </div>
-                )}
-
-                {fileUrl && (
-                  <a
-                    href={ext === 'docx' || ext === 'doc'
-                      ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=false`
-                      : fileUrl}
-                    target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 13, fontWeight: 500, color: 'var(--ocean)', textDecoration: 'none' }}
-                  >
-                    <Icons.External /> Open full file in new tab
-                  </a>
-                )}
+                <DocViewer
+                  submissionId={selected?._id}
+                  fileUrl={fileUrl}
+                  ext={ext}
+                  fileName={selected?.fileName}
+                />
 
                 {/* Score summary */}
                 <div className="ios-stats-grid-3">
