@@ -47,6 +47,7 @@ const Icons = {
   ExternalLink:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
   Sparkle:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/></svg>,
   Lock:        () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  History:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>,
 };
 
 // ── Global Styles ─────────────────────────────────────────────────────────────
@@ -61,6 +62,8 @@ const styleInjection = `
   .ultra-btn-ghost:hover{background:#e2e8f0;color:#0f172a}
   .ultra-btn-danger{background:#fee2e2;color:#dc2626}
   .ultra-btn-danger:hover{background:#fecaca}
+  .ultra-btn-success{background:#dcfce7;color:#16a34a}
+  .ultra-btn-success:hover{background:#bbf7d0}
   .ultra-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px}
   .ultra-card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.03);border:1px solid #f1f5f9;transition:transform .2s,box-shadow .2s}
   .ultra-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.06);border-color:#e2e8f0}
@@ -86,10 +89,10 @@ const styleInjection = `
 // File Viewer Modal
 // ─────────────────────────────────────────────────────────────────────────────
 function FileViewerModal({ filePath, fileName, onClose }) {
-  const ext   = getExt(filePath);
+  const ext     = getExt(filePath);
   const fileUrl = buildFileUrl(filePath);
-  const isDoc = ext === 'docx' || ext === 'doc';
-  const isPdf = ext === 'pdf';
+  const isDoc   = ext === 'docx' || ext === 'doc';
+  const isPdf   = ext === 'pdf';
   const [docxHtml, setDocxHtml] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
@@ -102,7 +105,7 @@ function FileViewerModal({ filePath, fileName, onClose }) {
         const token = localStorage.getItem('token');
         const res = await fetch(fileUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        const buf = await res.arrayBuffer();
+        const buf    = await res.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer: buf });
         setDocxHtml(result.value || '<p style="color:#94a3b8;text-align:center;padding:40px;">Empty document.</p>');
       } catch (e) { setError(e.message); }
@@ -113,10 +116,10 @@ function FileViewerModal({ filePath, fileName, onClose }) {
   const handleDownload = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res  = await fetch(fileUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const res   = await fetch(fileUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const blob  = await res.blob();
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
     a.href = url; a.download = fileName || 'document';
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
@@ -245,7 +248,7 @@ function ApprovalModal({ submission, onClose, onActioned }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VIEW MARKS MODAL — read-only, shown when marks are published/locked
+// VIEW MARKS MODAL — read-only
 // ─────────────────────────────────────────────────────────────────────────────
 function ViewMarksModal({ submission, onClose }) {
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -263,7 +266,6 @@ function ViewMarksModal({ submission, onClose }) {
     <>
       <div className="ultra-modal-overlay">
         <div className="ultra-modal" style={{ maxWidth:800 }}>
-          {/* Header */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 24px', borderBottom:'1px solid #e2e8f0', background:'#f8fafc' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               <div style={{ background:'#dcfce7', color:'#16a34a', borderRadius:10, padding:'5px 12px', fontWeight:700, fontSize:12, display:'flex', alignItems:'center', gap:5 }}>
@@ -271,15 +273,13 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
               <div>
                 <h2 style={{ fontSize:19, fontWeight:700, margin:0, color:'#0f172a' }}>Marks Overview</h2>
-                <p style={{ fontSize:12, color:'#64748b', margin:'2px 0 0' }}>These marks are published to the student and cannot be edited here.</p>
+                <p style={{ fontSize:12, color:'#64748b', margin:'2px 0 0' }}>These marks are published to the student.</p>
               </div>
             </div>
             <button onClick={onClose} className="ultra-btn ultra-btn-ghost" style={{ padding:8, borderRadius:'50%' }}><Icons.Close /></button>
           </div>
 
           <div className="ultra-scrollbar" style={{ padding:24, overflowY:'auto', display:'flex', flexDirection:'column', gap:22 }}>
-
-            {/* Student + Assignment */}
             <div style={{ background:'#f8fafc', borderRadius:16, padding:18, border:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <div style={{ fontWeight:700, fontSize:15, color:'#0f172a', marginBottom:4 }}>{submission.assignmentName}</div>
@@ -293,7 +293,6 @@ function ViewMarksModal({ submission, onClose }) {
               )}
             </div>
 
-            {/* Score + Grade */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
               <div style={{ background:`${sc}10`, border:`1px solid ${sc}40`, borderRadius:16, padding:24, textAlign:'center' }}>
                 <div style={{ fontSize:52, fontWeight:900, color:sc, lineHeight:1 }}>{submission.score ?? 0}%</div>
@@ -305,7 +304,6 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
             </div>
 
-            {/* Rubric Scores Table */}
             {rubricScores.length > 0 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#0f172a', marginBottom:12 }}>Rubric Breakdown</div>
@@ -322,9 +320,9 @@ function ViewMarksModal({ submission, onClose }) {
                     </thead>
                     <tbody>
                       {rubricScores.map((r, i) => {
-                        const pct   = r.maxScore > 0 ? Math.round((r.score / r.maxScore) * 100) : 0;
-                        const bc    = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
-                        const aiRb  = hasAI ? aiBreakdown.find(rb => rb.criterion?.toLowerCase() === r.criterion?.toLowerCase()) : null;
+                        const pct  = r.maxScore > 0 ? Math.round((r.score / r.maxScore) * 100) : 0;
+                        const bc   = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
+                        const aiRb = hasAI ? aiBreakdown.find(rb => rb.criterion?.toLowerCase() === r.criterion?.toLowerCase()) : null;
                         return (
                           <tr key={i} style={{ borderTop:'1px solid #f1f5f9' }}>
                             <td style={{ padding:'13px 16px', fontWeight:600, color:'#0f172a', fontSize:13 }}>{r.criterion}</td>
@@ -363,7 +361,6 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
             )}
 
-            {/* AI Summary */}
             {hasAI && (
               <div style={{ background:'#f5f3ff', border:'1px solid #e9d5ff', borderRadius:16, padding:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, fontWeight:700, color:'#7c3aed', marginBottom:14, fontSize:14 }}>
@@ -385,7 +382,6 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
             )}
 
-            {/* Feedback */}
             {submission.feedback && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#0f172a', marginBottom:10 }}>Lecturer Feedback</div>
@@ -395,7 +391,6 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
             )}
 
-            {/* Pinned corrections */}
             {corrections.length > 0 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#0f172a', marginBottom:10 }}>Pinned Corrections ({corrections.length})</div>
@@ -410,10 +405,9 @@ function ViewMarksModal({ submission, onClose }) {
               </div>
             )}
 
-            {/* Lock notice */}
             <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:12, padding:14, color:'#166534', fontSize:13, display:'flex', alignItems:'center', gap:10 }}>
               <Icons.Lock />
-              <span>These marks are <strong>final and published</strong>. To make any changes, use the <strong>Marking &amp; Feedback</strong> page from the sidebar.</span>
+              <span>These marks are <strong>final and published</strong>. To make changes, use the <strong>Marking &amp; Feedback</strong> page from the sidebar.</span>
             </div>
           </div>
 
@@ -428,9 +422,7 @@ function ViewMarksModal({ submission, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GRADE MODAL — for ungraded OR draft-saved (not published) submissions only
-//   "Save Draft"     → saves marks without publishing
-//   "Publish Marks"  → publishes & locks; student notified; cannot edit here again
+// GRADE MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 function GradeModal({ submission, onClose, onSaved }) {
   const [score,       setScore]       = useState(submission.score    ?? '');
@@ -442,14 +434,9 @@ function GradeModal({ submission, onClose, onSaved }) {
   const [action,      setAction]      = useState(null);
   const [error,       setError]       = useState('');
   const [viewerOpen,  setViewerOpen]  = useState(false);
-
   const studentName = submission.student?.username || submission.student?.email || '—';
 
-  const addCorrection = () => {
-    if (!newNote.trim()) return;
-    setCorrections(prev => [...prev, { note: newNote.trim(), addedAt: new Date().toISOString() }]);
-    setNewNote('');
-  };
+  const addCorrection    = () => { if (!newNote.trim()) return; setCorrections(prev => [...prev, { note: newNote.trim(), addedAt: new Date().toISOString() }]); setNewNote(''); };
   const removeCorrection = (i) => setCorrections(prev => prev.filter((_, idx) => idx !== i));
 
   const doSave = async (publish) => {
@@ -463,10 +450,7 @@ function GradeModal({ submission, onClose, onSaved }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onSaved();
-    } catch (e) {
-      setError(e.response?.data?.message || 'Failed to save.');
-      setSaving(false); setAction(null);
-    }
+    } catch (e) { setError(e.response?.data?.message || 'Failed to save.'); setSaving(false); setAction(null); }
   };
 
   return (
@@ -477,14 +461,13 @@ function GradeModal({ submission, onClose, onSaved }) {
             <div>
               <h2 style={{ fontSize:20, fontWeight:700, margin:0, color:'#0f172a' }}>Mark Submission</h2>
               <p style={{ fontSize:13, color:'#64748b', margin:'4px 0 0' }}>
-                <strong>Save Draft</strong> to continue later in Marking &amp; Feedback. <strong>Publish</strong> to send marks to the student (locked after).
+                <strong>Save Draft</strong> to continue later. <strong>Publish</strong> to send marks to the student (locked after).
               </p>
             </div>
             <button onClick={onClose} className="ultra-btn ultra-btn-ghost" style={{ padding:8, borderRadius:'50%' }}><Icons.Close /></button>
           </div>
 
           <div className="ultra-scrollbar" style={{ padding:24, overflowY:'auto', display:'flex', flexDirection:'column', gap:22 }}>
-            {/* Info */}
             <div style={{ background:'#f8fafc', borderRadius:16, padding:18, border:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <div style={{ fontWeight:700, fontSize:15, color:'#0f172a', marginBottom:4 }}>{submission.assignmentName}</div>
@@ -498,7 +481,6 @@ function GradeModal({ submission, onClose, onSaved }) {
               )}
             </div>
 
-            {/* Score + Grade */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
               <div>
                 <label className="ultra-label">Total Score (%)</label>
@@ -513,7 +495,6 @@ function GradeModal({ submission, onClose, onSaved }) {
               </div>
             </div>
 
-            {/* Feedback */}
             <div>
               <label className="ultra-label">
                 Feedback for Student <span style={{ color:'#dc2626' }}>*</span>
@@ -522,10 +503,9 @@ function GradeModal({ submission, onClose, onSaved }) {
               <textarea className="ultra-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Provide detailed feedback…" style={{ minHeight:130, resize:'vertical' }} />
             </div>
 
-            {/* Pinned corrections */}
             <div>
               <label className="ultra-label" style={{ display:'flex', alignItems:'center', gap:6 }}>
-                Pinned Corrections <span style={{ color:'#94a3b8', fontWeight:400, fontSize:12 }}>(annotations visible to student)</span>
+                Pinned Corrections <span style={{ color:'#94a3b8', fontWeight:400, fontSize:12 }}>(visible to student)</span>
               </label>
               {corrections.length > 0 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:14 }}>
@@ -545,7 +525,7 @@ function GradeModal({ submission, onClose, onSaved }) {
             </div>
 
             <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12, padding:14, color:'#1e40af', fontSize:13 }}>
-              💡 For detailed rubric scoring and AI comparison, use <strong>Marking &amp; Feedback</strong> in the sidebar. Save Draft here first, then open that page.
+              💡 For rubric scoring and AI comparison, use <strong>Marking &amp; Feedback</strong> in the sidebar.
             </div>
           </div>
 
@@ -782,48 +762,30 @@ function SubmissionRow({ s, onView, statusBadge, scoreCell, actionButton }) {
   );
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // RE-GRADE REVIEW MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 function RegradeModal({ submission, onClose, onActioned }) {
-  const [score, setScore] = useState(submission.score ?? '');
-  const [grade, setGrade] = useState(submission.grade || '');
-  const [feedback, setFeedback] = useState(submission.feedback || '');
-  const [working, setWorking] = useState(false);
-  const [error, setError] = useState('');
+  const [score,      setScore]      = useState(submission.score ?? '');
+  const [grade,      setGrade]      = useState(submission.grade || '');
+  const [feedback,   setFeedback]   = useState(submission.feedback || '');
+  const [working,    setWorking]    = useState(false);
+  const [error,      setError]      = useState('');
   const [viewerOpen, setViewerOpen] = useState(false);
-
   const studentName = submission.student?.username || submission.student?.email || '—';
 
   const handleAccept = async () => {
-    if (score === '' || Number.isNaN(Number(score))) {
-      setError('Please enter a valid score.');
-      return;
-    }
-
-    setWorking(true);
-    setError('');
-
+    if (score === '' || Number.isNaN(Number(score))) { setError('Please enter a valid score.'); return; }
+    setWorking(true); setError('');
     try {
       const token = localStorage.getItem('token');
-
       await axios.put(
         `${API}/submissions/${submission._id}/accept-regrade`,
-        {
-          score: Number(score) || 0,
-          grade,
-          feedback,
-          rubricScores: submission.rubricScores || [],
-        },
+        { score: Number(score) || 0, grade, feedback, rubricScores: submission.rubricScores || [] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       onActioned();
-    } catch (e) {
-      setError(e.response?.data?.message || 'Failed to accept regrade.');
-      setWorking(false);
-    }
+    } catch (e) { setError(e.response?.data?.message || 'Failed to accept regrade.'); setWorking(false); }
   };
 
   return (
@@ -845,7 +807,6 @@ function RegradeModal({ submission, onClose, onActioned }) {
               <div style={{ color:'#94a3b8', fontSize:12, marginTop:6 }}>
                 Requested: {submission.regrade?.requestedAt ? new Date(submission.regrade.requestedAt).toLocaleString() : '—'}
               </div>
-
               {submission.filePath && (
                 <button onClick={() => setViewerOpen(true)} className="ultra-btn" style={{ background:'#e0e7ff', color:'#4f46e5', marginTop:14 }}>
                   <Icons.File /> View Document
@@ -874,13 +835,7 @@ function RegradeModal({ submission, onClose, onActioned }) {
 
             <div>
               <label className="ultra-label">Feedback</label>
-              <textarea
-                className="ultra-input"
-                value={feedback}
-                onChange={e => setFeedback(e.target.value)}
-                placeholder="Explain the updated marks..."
-                style={{ minHeight:110, resize:'vertical' }}
-              />
+              <textarea className="ultra-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Explain the updated marks..." style={{ minHeight:110, resize:'vertical' }} />
             </div>
           </div>
 
@@ -893,7 +848,6 @@ function RegradeModal({ submission, onClose, onActioned }) {
           </div>
         </div>
       </div>
-
       {viewerOpen && <FileViewerModal filePath={submission.filePath} fileName={submission.fileName} onClose={() => setViewerOpen(false)} />}
     </>
   );
@@ -913,9 +867,8 @@ function RegradeRequestsTab() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/submissions/all`, { headers:{ Authorization:`Bearer ${token}` } });
-      const regrades = (res.data.submissions || []).filter(s => s.regrade?.status === 'pending');
-      setSubmissions(regrades);
+      const res   = await axios.get(`${API}/submissions/all`, { headers:{ Authorization:`Bearer ${token}` } });
+      setSubmissions((res.data.submissions || []).filter(s => s.regrade?.status === 'pending'));
     } catch { setSubmissions([]); }
     finally { setLoading(false); }
   };
@@ -951,7 +904,7 @@ function RegradeRequestsTab() {
         <div style={{ background:'#fff', borderRadius:24, padding:'80px 20px', textAlign:'center', border:'1px dashed #cbd5e1' }}>
           <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><Icons.EmptyBox /></div>
           <h3 style={{ fontSize:18, color:'#0f172a', margin:'0 0 8px' }}>No Regrade Requests Pending</h3>
-          <p style={{ color:'#64748b', margin:0 }}>All caught up! New regrade requests will appear here.</p>
+          <p style={{ color:'#64748b', margin:0 }}>All caught up!</p>
         </div>
       ) : (
         <div style={{ overflowX:'auto', paddingBottom:20 }}>
@@ -959,7 +912,7 @@ function RegradeRequestsTab() {
             <thead>
               <tr style={{ color:'#64748b', fontSize:12, textTransform:'uppercase', letterSpacing:'0.05em' }}>
                 {['Student','Assignment','Document','Status','Current Marks / Reason','Action'].map((h,i) => (
-                  <th key={h} style={{ padding:'0 20px', textAlign: i===5?'right':'left', fontWeight:700 }}>{h}</th>
+                  <th key={h} style={{ padding:'0 20px', textAlign:i===5?'right':'left', fontWeight:700 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -969,12 +922,8 @@ function RegradeRequestsTab() {
                   statusBadge={<span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:'#fef9c3', color:'#854d0e' }}>⏳ Regrade Requested</span>}
                   scoreCell={
                     <div>
-                      <div style={{ fontWeight:700, color:'#0f172a', fontSize:13 }}>
-                        Current: {s.score ?? 0}% {s.grade ? `(${s.grade})` : ''}
-                      </div>
-                      <div style={{ color:'#64748b', fontSize:12, marginTop:4, maxWidth:260, whiteSpace:'normal' }}>
-                        Reason: {s.regrade?.reason || 'No reason provided'}
-                      </div>
+                      <div style={{ fontWeight:700, color:'#0f172a', fontSize:13 }}>Current: {s.score ?? 0}% {s.grade ? `(${s.grade})` : ''}</div>
+                      <div style={{ color:'#64748b', fontSize:12, marginTop:4, maxWidth:260, whiteSpace:'normal' }}>Reason: {s.regrade?.reason || 'No reason provided'}</div>
                     </div>
                   }
                   actionButton={<button onClick={()=>setReviewing(s)} className="ultra-btn ultra-btn-primary" style={{ padding:'8px 16px', fontSize:13 }}>Review Regrade</button>}
@@ -984,7 +933,6 @@ function RegradeRequestsTab() {
           </table>
         </div>
       )}
-
       {reviewing && <RegradeModal submission={reviewing} onClose={()=>setReviewing(null)} onActioned={()=>{ setReviewing(null); fetchData(); }} />}
       {viewing   && <FileViewerModal filePath={viewing.filePath} fileName={viewing.fileName} onClose={()=>setViewing(null)} />}
     </div>
@@ -992,18 +940,17 @@ function RegradeRequestsTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MARK & FEEDBACK TAB
-// Shows only actual final submissions; pre-approval drafts are excluded
-// Button rules:
-//   published === true  → "View Marks"   → ViewMarksModal (read-only, locked)
-//   Graded & !published → "Edit Marking" → navigate('/lecturer/marking')
-//   Pending             → "Mark"         → GradeModal
+// SHARED GRADING TAB
+// defaultFilter='Pending' → Mark & Feedback (submissions to mark)
+// defaultFilter='Graded'  → Marking History (already marked, read-only)
 // ─────────────────────────────────────────────────────────────────────────────
-function GradingTab() {
+function GradingTab({ defaultFilter = 'Pending' }) {
   const navigate = useNavigate();
+  const isHistoryMode = defaultFilter === 'Graded';
+
   const [submissions, setSubmissions] = useState([]);
   const [loading,     setLoading]     = useState(true);
-  const [filter,      setFilter]      = useState('All');
+  const [filter,      setFilter]      = useState(defaultFilter);
   const [search,      setSearch]      = useState('');
   const [grading,     setGrading]     = useState(null);
   const [viewing,     setViewing]     = useState(null);
@@ -1013,10 +960,9 @@ function GradingTab() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      // ✅ Correct endpoint + show approved and regular (draft) submissions
-      const res = await axios.get(`${API}/submissions/all`, { headers:{ Authorization:`Bearer ${token}` } });
+      const res   = await axios.get(`${API}/submissions/all`, { headers:{ Authorization:`Bearer ${token}` } });
       const toShow = (res.data.submissions||[]).filter(
-        s => s.approvalStatus==='approved' || s.approvalStatus==='draft'
+        s => s.approvalStatus === 'approved' || s.approvalStatus === 'draft'
       );
       setSubmissions(toShow);
     } catch { setSubmissions([]); }
@@ -1025,10 +971,10 @@ function GradingTab() {
   useEffect(() => { fetchData(); }, []);
 
   const filtered = submissions.filter(s => {
-    const matchStatus = filter==='All'
-      || (filter==='Pending' && s.status==='Pending')
-      || (filter==='Graded'  && s.status==='Graded');
-    const name = s.student?.username||s.student?.email||'';
+    const matchStatus = filter === 'All'
+      || (filter === 'Pending' && s.status === 'Pending')
+      || (filter === 'Graded'  && s.status === 'Graded');
+    const name = s.student?.username || s.student?.email || '';
     const matchSearch = !search
       || name.toLowerCase().includes(search.toLowerCase())
       || (s.assignmentName||'').toLowerCase().includes(search.toLowerCase())
@@ -1036,20 +982,23 @@ function GradingTab() {
     return matchStatus && matchSearch;
   });
 
-  const pendingCount = submissions.filter(s => s.status==='Pending').length;
-  const gradedCount  = submissions.filter(s => s.status==='Graded').length;
+  const pendingCount = submissions.filter(s => s.status === 'Pending').length;
+  const gradedCount  = submissions.filter(s => s.status === 'Graded').length;
+
+  // History mode only shows Graded; Mark mode shows All/Pending/Graded filters
+  const filterOptions = isHistoryMode
+    ? ['Graded']
+    : ['All', 'Pending', 'Graded'];
 
   const getActionButton = (s) => {
     if (s.published) {
-      // Published & locked → view only, no editing here
       return (
         <button onClick={()=>setViewing(s)} className="ultra-btn ultra-btn-success" style={{ padding:'8px 16px', fontSize:13 }}>
           <Icons.Eye /> View Marks
         </button>
       );
     }
-    if (s.status==='Graded') {
-      // Saved but not published → go to full marking & feedback page
+    if (s.status === 'Graded') {
       return (
         <button
           onClick={()=>navigate('/lecturer/marking', { state:{ submissionId: s._id } })}
@@ -1060,7 +1009,6 @@ function GradingTab() {
         </button>
       );
     }
-    // Pending / not graded yet → mark it
     return (
       <button onClick={()=>setGrading(s)} className="ultra-btn ultra-btn-primary" style={{ padding:'8px 16px', fontSize:13 }}>
         Mark
@@ -1070,28 +1018,46 @@ function GradingTab() {
 
   const getStatusBadge = (s) => {
     if (s.published) return <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:'#dcfce7', color:'#166534', display:'inline-flex', alignItems:'center', gap:5 }}><Icons.Lock /> Published</span>;
-    if (s.status==='Graded') return <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:'#fef9c3', color:'#854d0e' }}>💾 Draft Saved</span>;
+    if (s.status === 'Graded') return <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:'#fef9c3', color:'#854d0e' }}>💾 Draft Saved</span>;
     return <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:'#f1f5f9', color:'#64748b' }}>⏳ Pending</span>;
   };
 
+  const emptyMessage = isHistoryMode
+    ? 'No graded submissions yet. Grade and publish submissions to see them here.'
+    : filter === 'All' ? 'Student submissions will appear here once received.' : `No ${filter.toLowerCase()} submissions found.`;
+
   return (
     <div>
-      <div style={{ display:'flex', gap:16, marginBottom:24, flexWrap:'wrap', alignItems:'center' }}>
-        <div style={{ display:'flex', alignItems:'center', background:'#fff', borderRadius:12, padding:6, boxShadow:'0 2px 8px rgba(0,0,0,.03)', border:'1px solid #f1f5f9' }}>
-          {['All','Pending','Graded'].map(s => (
-            <button key={s} onClick={()=>setFilter(s)} style={{ padding:'8px 16px', border:'none', background:filter===s?'#f1f5f9':'transparent', color:filter===s?'#0f172a':'#64748b', fontWeight:600, fontSize:13, borderRadius:8, cursor:'pointer', transition:'all .2s' }}>
-              {s}
-              {s==='Pending' && pendingCount>0 && <span style={{ marginLeft:4, color:'#dc2626' }}>({pendingCount})</span>}
-              {s==='Graded'  && gradedCount>0  && <span style={{ marginLeft:4, color:'#16a34a' }}>({gradedCount})</span>}
-            </button>
-          ))}
+      {/* Summary banner */}
+      {isHistoryMode ? (
+        <div style={{ display:'flex', gap:16, marginBottom:24, flexWrap:'wrap', alignItems:'center' }}>
+          <div style={{ background:'#f0fdf4', color:'#166534', padding:'10px 16px', borderRadius:12, fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
+            <Icons.History /> {gradedCount} submission{gradedCount===1?'':'s'} marked so far
+          </div>
+          <div style={{ flex:1, minWidth:260, position:'relative' }}>
+            <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}><Icons.Search /></div>
+            <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search student, assignment…" style={{ width:'100%', padding:'12px 16px 12px 42px', border:'none', borderRadius:12, background:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,.03)', fontSize:14, outline:'none' }} />
+          </div>
+          <button onClick={fetchData} className="ultra-btn ultra-btn-ghost" style={{ background:'#fff' }}><Icons.Refresh /></button>
         </div>
-        <div style={{ flex:1, minWidth:260, position:'relative' }}>
-          <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}><Icons.Search /></div>
-          <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search student, assignment…" style={{ width:'100%', padding:'12px 16px 12px 42px', border:'none', borderRadius:12, background:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,.03)', fontSize:14, outline:'none' }} />
+      ) : (
+        <div style={{ display:'flex', gap:16, marginBottom:24, flexWrap:'wrap', alignItems:'center' }}>
+          <div style={{ display:'flex', alignItems:'center', background:'#fff', borderRadius:12, padding:6, boxShadow:'0 2px 8px rgba(0,0,0,.03)', border:'1px solid #f1f5f9' }}>
+            {filterOptions.map(s => (
+              <button key={s} onClick={()=>setFilter(s)} style={{ padding:'8px 16px', border:'none', background:filter===s?'#f1f5f9':'transparent', color:filter===s?'#0f172a':'#64748b', fontWeight:600, fontSize:13, borderRadius:8, cursor:'pointer', transition:'all .2s' }}>
+                {s}
+                {s==='Pending' && pendingCount>0 && <span style={{ marginLeft:4, color:'#dc2626' }}>({pendingCount})</span>}
+                {s==='Graded'  && gradedCount>0  && <span style={{ marginLeft:4, color:'#16a34a' }}>({gradedCount})</span>}
+              </button>
+            ))}
+          </div>
+          <div style={{ flex:1, minWidth:260, position:'relative' }}>
+            <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}><Icons.Search /></div>
+            <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search student, assignment…" style={{ width:'100%', padding:'12px 16px 12px 42px', border:'none', borderRadius:12, background:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,.03)', fontSize:14, outline:'none' }} />
+          </div>
+          <button onClick={fetchData} className="ultra-btn ultra-btn-ghost" style={{ background:'#fff' }}><Icons.Refresh /></button>
         </div>
-        <button onClick={fetchData} className="ultra-btn ultra-btn-ghost" style={{ background:'#fff' }}><Icons.Refresh /></button>
-      </div>
+      )}
 
       {loading ? (
         <div style={{ padding:'60px 0', textAlign:'center', color:'#64748b' }}>
@@ -1101,10 +1067,10 @@ function GradingTab() {
       ) : filtered.length===0 ? (
         <div style={{ background:'#fff', borderRadius:24, padding:'80px 20px', textAlign:'center', border:'1px dashed #cbd5e1' }}>
           <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><Icons.EmptyBox /></div>
-          <h3 style={{ fontSize:18, color:'#0f172a', margin:'0 0 8px' }}>No Submissions to Mark</h3>
-          <p style={{ color:'#64748b', margin:0 }}>
-            {filter==='All' ? 'Student submissions will appear here once received.' : `No ${filter.toLowerCase()} submissions found.`}
-          </p>
+          <h3 style={{ fontSize:18, color:'#0f172a', margin:'0 0 8px' }}>
+            {isHistoryMode ? 'No Marking History Yet' : 'No Submissions to Mark'}
+          </h3>
+          <p style={{ color:'#64748b', margin:0 }}>{emptyMessage}</p>
         </div>
       ) : (
         <div style={{ overflowX:'auto', paddingBottom:20 }}>
@@ -1136,15 +1102,10 @@ function GradingTab() {
         </div>
       )}
 
-      {/* GradeModal — only for non-published submissions */}
       {grading && !grading.published && (
         <GradeModal submission={grading} onClose={()=>setGrading(null)} onSaved={()=>{ setGrading(null); fetchData(); }} />
       )}
-
-      {/* ViewMarksModal — read-only for published */}
-      {viewing && <ViewMarksModal submission={viewing} onClose={()=>setViewing(null)} />}
-
-      {/* Document viewer */}
+      {viewing    && <ViewMarksModal submission={viewing} onClose={()=>setViewing(null)} />}
       {docViewing && <FileViewerModal filePath={docViewing.filePath} fileName={docViewing.fileName} onClose={()=>setDocViewing(null)} />}
     </div>
   );
@@ -1162,7 +1123,7 @@ function UploadTab() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/assignments`, { headers:{ Authorization:`Bearer ${token}` } });
+      const res   = await axios.get(`${API}/assignments`, { headers:{ Authorization:`Bearer ${token}` } });
       setAssignments(res.data.assignments||[]);
     } catch { setAssignments([]); }
     finally { setLoading(false); }
@@ -1224,11 +1185,13 @@ function UploadTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LecturerSubmissions() {
   const [activeTab, setActiveTab] = useState('regrades');
+
   const tabs = [
-    { id:'regrades', label:'Regrade Requests' },
-    { id:'grading',      label:'Mark & Feedback' },
-    { id:'manage',       label:'Manage Assignments' },
+    { id: 'regrades', label: 'Regrade Requests' },
+    { id: 'history',  label: 'Marking History'  },
+    { id: 'manage',   label: 'Manage Assignments'},
   ];
+
   return (
     <LecturerLayout>
       <style>{styleInjection}</style>
@@ -1245,8 +1208,9 @@ export default function LecturerSubmissions() {
           ))}
         </div>
         {activeTab==='regrades' && <RegradeRequestsTab />}
-        {activeTab==='grading'      && <GradingTab />}
-        {activeTab==='manage'       && <UploadTab />}
+        {activeTab==='grading'  && <GradingTab defaultFilter="Pending" />}
+        {activeTab==='history'  && <GradingTab defaultFilter="Graded"  />}
+        {activeTab==='manage'   && <UploadTab />}
       </div>
     </LecturerLayout>
   );

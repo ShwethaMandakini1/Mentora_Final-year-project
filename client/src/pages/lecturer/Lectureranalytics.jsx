@@ -15,19 +15,7 @@ export default function LecturerAnalytics() {
       .finally(() => setLoading(false));
   }, []);
 
-  const mock = [
-    { _id:'1', student:{ username:'Kavindi K' }, assignmentName:'HCI Final Report', moduleName:'HCI', score:85, grade:'A',
-      feedback:'Excellent work on HCI principles.',
-      rubricScores:[{ criterion:'Thesis', score:27, maxScore:30 }, { criterion:'Evidence', score:22, maxScore:25 }, { criterion:'Structure', score:17, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:7, maxScore:10 }] },
-    { _id:'2', student:{ username:'Amal P' }, assignmentName:'SE Proposal', moduleName:'SE', score:82, grade:'A-',
-      feedback:'Good proposal with clear objectives.',
-      rubricScores:[{ criterion:'Thesis', score:25, maxScore:30 }, { criterion:'Evidence', score:21, maxScore:25 }, { criterion:'Structure', score:16, maxScore:20 }, { criterion:'Analysis', score:12, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
-    { _id:'3', student:{ username:'Saman W' }, assignmentName:'DBMS Research', moduleName:'DBMS', score:75, grade:'B+',
-      feedback:'Satisfactory research on database systems.',
-      rubricScores:[{ criterion:'Thesis', score:22, maxScore:30 }, { criterion:'Evidence', score:19, maxScore:25 }, { criterion:'Structure', score:15, maxScore:20 }, { criterion:'Analysis', score:11, maxScore:15 }, { criterion:'Writing', score:8, maxScore:10 }] },
-  ];
-
-  const display = loading ? [] : (submissions.length > 0 ? submissions : mock);
+  const display = loading ? [] : submissions;
   const avg     = display.length > 0 ? Math.round(display.reduce((a, s) => a + (s.score || 0), 0) / display.length) : 0;
   const highest = display.length > 0 ? Math.max(...display.map(s => s.score || 0)) : 0;
 
@@ -86,7 +74,11 @@ export default function LecturerAnalytics() {
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 12 }}>
               Rubric Breakdown
             </div>
-            {(selected.rubricScores || []).map(r => (
+            {(selected.rubricScores || []).length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                No rubric scores recorded.
+              </div>
+            ) : (selected.rubricScores || []).map(r => (
               <div key={r.criterion} className="ios-rubric-row">
                 <div className="ios-rubric-header">
                   <span className="ios-rubric-criterion">{r.criterion}</span>
@@ -96,7 +88,7 @@ export default function LecturerAnalytics() {
                   <div className="ios-progress-wrap">
                     <div
                       className="ios-progress-fill"
-                      style={{ width: `${(r.score / r.maxScore) * 100}%` }}
+                      style={{ width: `${r.maxScore > 0 ? (r.score / r.maxScore) * 100 : 0}%` }}
                     />
                   </div>
                 </div>
@@ -127,9 +119,9 @@ export default function LecturerAnalytics() {
         {/* Stat cards */}
         <div className="ios-stats-grid-3">
           {[
-            { label: 'Total Graded',  val: display.length,  colorClass: 'stat-blue',  icon: 'icon-graded' },
-            { label: 'Class Average', val: `${avg}%`,        colorClass: 'stat-green', icon: 'icon-avg'    },
-            { label: 'Highest Score', val: `${highest}%`,    colorClass: 'stat-ocean', icon: 'icon-avg'    },
+            { label: 'Total Graded',  val: display.length, colorClass: 'stat-blue',  icon: 'icon-graded' },
+            { label: 'Class Average', val: `${avg}%`,       colorClass: 'stat-green', icon: 'icon-avg'    },
+            { label: 'Highest Score', val: `${highest}%`,   colorClass: 'stat-ocean', icon: 'icon-avg'    },
           ].map(s => (
             <div key={s.label} className={`ios-stat-card ${s.colorClass}`}>
               <div className="ios-stat-icon-wrap">
@@ -155,6 +147,9 @@ export default function LecturerAnalytics() {
                 <path d="M13 20h14M20 13v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
               </svg>
               <p>No graded submissions yet.</p>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                Grade and publish submissions from Marking &amp; Feedback to see them here.
+              </span>
             </div>
           ) : (
             <div className="ios-table-wrap">

@@ -10,13 +10,14 @@ const NotificationSchema = new mongoose.Schema({
       'regrade_accepted',     // lecturer accepted regrade
       'submission_approved',  // lecturer approved submission
       'submission_rejected',  // lecturer rejected submission
+      'new_assignment',       // new assignment posted
 
       // ── Lecturer-facing ─────────────────────────────
       'approval_requested',   // student submitted for review
-      'regrade_requested',    // student requested a regrade  ← NEW
+      'regrade_requested',    // student requested a regrade
 
       // ── Both (admin → anyone) ───────────────────────
-      'admin_message',        // admin broadcast / targeted message ← NEW
+      'admin_message',        // admin broadcast / targeted message
     ],
     required: true,
   },

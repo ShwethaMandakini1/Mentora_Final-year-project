@@ -25,7 +25,31 @@ const runAIAnalysis = async (submissionId, filePath, assignmentName, moduleCode,
         }
         const analysis = await analyseSubmission({ text, assignmentName, moduleCode, moduleName, rubric, context });
         await Submission.findByIdAndUpdate(submissionId, {
-          aiAnalysis: { status: 'done', ...analysis, analysedAt: new Date() }
+          aiAnalysis: {
+            status:         'done',
+            message:        analysis.message        || '',
+            predictedScore: analysis.predictedScore || 0,
+            predictedGrade: analysis.predictedGrade || '',
+            summary:        analysis.summary        || '',
+            strengths:      analysis.strengths      || [],
+            missingParts: (analysis.missingParts || []).map(p => ({
+              part:       p.part       || '',
+              importance: p.importance || '',
+              suggestion: p.suggestion || '',
+            })),
+            enhancements: (analysis.enhancements || []).map(e => ({
+              area:       e.area       || '',
+              current:    e.current    || '',
+              suggestion: e.suggestion || '',
+            })),
+            rubricBreakdown: (analysis.rubricBreakdown || []).map(r => ({
+              criterion: r.criterion || '',
+              score:     Number(r.score)   || 0,
+              maxScore:  Number(r.maxScore) || 0,
+              comment:   r.comment  || '',
+            })),
+            analysedAt: new Date(),
+          }
         });
         console.log(`✅ AI analysis done for submission ${submissionId}`);
       })(),
@@ -170,7 +194,6 @@ exports.submitForApproval = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → GET /submissions/pending-approvals
-// Returns all pre-approval submissions for the Pre-Approvals page
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getPendingApprovals = async (req, res) => {
   try {
@@ -279,20 +302,6 @@ exports.getMySubmissions = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LECTURER → GET /submissions/all
-//
-// Marking & Feedback ONLY shows direct submissions from the Assignments tab.
-// These always have approvalStatus === 'draft'.
-//
-// Pre-approval submissions (pending_review / approved / rejected) belong
-// exclusively to the Pre-Approvals page and must NEVER appear here.
-//
-// Flow summary:
-//   Pre-Approval tab  → submitForApproval → approvalStatus: 'pending_review'
-//                     → lecturer approves → approvalStatus: 'approved'
-//                     → shown in Pre-Approvals page ONLY
-//
-//   Assignments tab   → submit            → approvalStatus: 'draft'
-//                     → shown in Marking & Feedback ONLY
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getAllSubmissions = async (req, res) => {
   try {
@@ -341,7 +350,9 @@ exports.gradeSubmission = async (req, res) => {
     let parsedRubricScores = [];
     if (Array.isArray(rubricScores) && rubricScores.length > 0) {
       parsedRubricScores = rubricScores.map(r => ({
-        criterion: r.criterion || '', score: Number(r.score) || 0, maxScore: Number(r.maxScore) || 0,
+        criterion:  r.criterion  || '',
+        score:      Number(r.score)    || 0,
+        maxScore:   Number(r.maxScore) || 0,
         percentage: r.maxScore > 0 ? Math.round((Number(r.score) / Number(r.maxScore)) * 100) : 0,
       }));
     }
@@ -389,20 +400,32 @@ exports.acceptRegrade = async (req, res) => {
     let parsedRubricScores = [];
     if (Array.isArray(rubricScores) && rubricScores.length > 0) {
       parsedRubricScores = rubricScores.map(r => ({
-        criterion: r.criterion || '', score: Number(r.score) || 0, maxScore: Number(r.maxScore) || 0,
+        criterion:  r.criterion  || '',
+        score:      Number(r.score)    || 0,
+        maxScore:   Number(r.maxScore) || 0,
         percentage: r.maxScore > 0 ? Math.round((Number(r.score) / Number(r.maxScore)) * 100) : 0,
       }));
     }
     const sub = await Submission.findByIdAndUpdate(
       req.params.id,
-      { score: Number(score) || 0, grade: grade || '', feedback: feedback || '', rubricScores: parsedRubricScores, status: 'Graded', published: true, gradedAt: new Date(), regrade: { status: 'accepted', reviewedAt: new Date() } },
+      {
+        score: Number(score) || 0, grade: grade || '', feedback: feedback || '',
+        rubricScores: parsedRubricScores, status: 'Graded', published: true,
+        gradedAt: new Date(), regrade: { status: 'accepted', reviewedAt: new Date() },
+      },
       { new: true }
     ).populate('student', 'username email');
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
     if (sub.student?._id) {
       const scoreText = score != null ? `New score: ${score}%` : '';
       const gradeText = grade ? ` (${grade})` : '';
-      await createNotification({ userId: sub.student._id, type: 'regrade_accepted', title: 'Re-grade Request Accepted', message: `Your re-grade request for "${sub.assignmentName}" has been accepted.${scoreText ? ' ' + scoreText + gradeText + '.' : ''}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, score, grade } });
+      await createNotification({
+        userId:  sub.student._id,
+        type:    'regrade_accepted',
+        title:   'Re-grade Request Accepted',
+        message: `Your re-grade request for "${sub.assignmentName}" has been accepted.${scoreText ? ' ' + scoreText + gradeText + '.' : ''}`,
+        meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, score, grade },
+      });
     }
     res.json({ success: true, submission: sub });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
@@ -420,7 +443,10 @@ exports.reanalyseSubmission = async (req, res) => {
       const assignment = await Assignment.findOne({ title: sub.assignmentName });
       if (assignment) {
         rubric  = assignment.rubric || [];
-        context = [assignment.description ? `Assignment Description: ${assignment.description}` : '', assignment.instructions ? `Lecturer Instructions: ${assignment.instructions}` : ''].filter(Boolean).join('\n');
+        context = [
+          assignment.description  ? `Assignment Description: ${assignment.description}`  : '',
+          assignment.instructions ? `Lecturer Instructions: ${assignment.instructions}` : '',
+        ].filter(Boolean).join('\n');
       }
     } catch {}
     await Submission.findByIdAndUpdate(req.params.id, { aiAnalysis: { status: 'pending' } });
@@ -450,29 +476,38 @@ exports.updateSubmission = async (req, res) => {
       sub.aiAnalysis = { status: 'pending' };
       let rubric = [];
       try { rubric = JSON.parse(req.body.rubric || '[]'); } catch {}
-      const context = [req.body.description ? `Assignment Description: ${req.body.description}` : '', req.body.instructions ? `Lecturer Instructions: ${req.body.instructions}` : ''].filter(Boolean).join('\n');
+      const context = [
+        req.body.description  ? `Assignment Description: ${req.body.description}`  : '',
+        req.body.instructions ? `Lecturer Instructions: ${req.body.instructions}` : '',
+      ].filter(Boolean).join('\n');
       runAIAnalysis(sub._id, `submissions/${req.file.filename}`, sub.assignmentName, sub.moduleCode, sub.moduleName, rubric, context);
     }
 
-    sub.status = 'Pending'; sub.published = false; sub.score = undefined;
-    sub.grade = undefined; sub.feedback = undefined; sub.gradedAt = undefined;
+    sub.status       = 'Pending';
+    sub.published    = false;
+    sub.score        = undefined;
+    sub.grade        = undefined;
+    sub.feedback     = undefined;
+    sub.gradedAt     = undefined;
     sub.rubricScores = [];
-    // FIX: Keep the original approvalStatus — don't override 'draft' with 'pending_review'.
-    // Direct submissions (Assignments tab) stay as 'draft' so they remain in Marking & Feedback.
-    // Only pre-approval submissions should ever be 'pending_review'.
+
     if (!sub.approvalStatus || sub.approvalStatus === 'draft') {
-      sub.approvalStatus = 'draft';  // direct submission — stays in Marking & Feedback
+      sub.approvalStatus = 'draft';
     }
-    // If it was a pre-approval submission being revised, keep it in the review queue
-    // (approvalStatus stays as-is: 'pending_review' / 'rejected')
+
     await sub.save();
 
-    // Only notify lecturers if this is a pre-approval revision
     if (sub.approvalStatus === 'pending_review') {
       try {
         const lecturers = await User.find({ role: 'lecturer' });
         for (const lecturer of lecturers) {
-          await createNotification({ userId: lecturer._id, type: 'approval_requested', title: 'Submission Revised — Needs Review', message: `A student revised their submission for "${sub.assignmentName}" (${sub.moduleCode}). Please re-review.`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode } });
+          await createNotification({
+            userId:  lecturer._id,
+            type:    'approval_requested',
+            title:   'Submission Revised — Needs Review',
+            message: `A student revised their submission for "${sub.assignmentName}" (${sub.moduleCode}). Please re-review.`,
+            meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode },
+          });
         }
       } catch (notifErr) { console.error('⚠️ Notification error:', notifErr.message); }
     }
@@ -517,7 +552,11 @@ exports.getDashboardStats = async (req, res) => {
     const pending = submissions.filter(s => s.status === 'Pending').length;
     const avgScore = graded.length > 0
       ? Math.round(graded.reduce((a, s) => a + (Number(s.score) || 0), 0) / graded.length) : 0;
-    const getGrade = p => { if (p>=90)return'A+';if(p>=85)return'A';if(p>=80)return'A-';if(p>=75)return'B+';if(p>=70)return'B';if(p>=65)return'B-';if(p>=60)return'C+';if(p>=55)return'C';return'F'; };
+    const getGrade = p => {
+      if (p >= 90) return 'A+'; if (p >= 85) return 'A';  if (p >= 80) return 'A-';
+      if (p >= 75) return 'B+'; if (p >= 70) return 'B';  if (p >= 65) return 'B-';
+      if (p >= 60) return 'C+'; if (p >= 55) return 'C';  return 'F';
+    };
     const moduleMap = {};
     for (const s of graded) {
       const key = s.moduleCode || 'Unknown';
@@ -528,7 +567,9 @@ exports.getDashboardStats = async (req, res) => {
       const avg = Math.round(m.scores.reduce((a, b) => a + b, 0) / m.scores.length);
       return { moduleCode: m.moduleCode, moduleName: m.moduleName, average: avg, grade: getGrade(avg) };
     });
-    const bestModule = modules.length > 0 ? modules.reduce((best, m) => m.average > best.average ? m : best, modules[0]) : null;
+    const bestModule = modules.length > 0
+      ? modules.reduce((best, m) => m.average > best.average ? m : best, modules[0])
+      : null;
     res.json({ success: true, stats: { average: avgScore, grade: getGrade(avgScore), total, graded: graded.length, pending, modules, bestModule } });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 };
@@ -543,11 +584,19 @@ exports.requestRegrade = async (req, res) => {
     if (!sub) return res.status(404).json({ success: false, message: 'Submission not found' });
     if (sub.student._id.toString() !== req.user._id.toString())
       return res.status(401).json({ success: false, message: 'Not authorised' });
-    await Submission.findByIdAndUpdate(req.params.id, { regrade: { status: 'pending', reason: reason || '', requestedAt: new Date() } });
+    await Submission.findByIdAndUpdate(req.params.id, {
+      regrade: { status: 'pending', reason: reason || '', requestedAt: new Date() },
+    });
     try {
       const lecturers = await User.find({ role: 'lecturer' });
       for (const lecturer of lecturers) {
-        await createNotification({ userId: lecturer._id, type: 'regrade_requested', title: 'Re-grade Request', message: `${sub.student.username || 'A student'} requested a re-grade for "${sub.assignmentName}"${sub.moduleCode ? ` (${sub.moduleCode})` : ''}.${reason ? ` Reason: ${reason}` : ''}`, meta: { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, studentName: sub.student.username, reason } });
+        await createNotification({
+          userId:  lecturer._id,
+          type:    'regrade_requested',
+          title:   'Re-grade Request',
+          message: `${sub.student.username || 'A student'} requested a re-grade for "${sub.assignmentName}"${sub.moduleCode ? ` (${sub.moduleCode})` : ''}.${reason ? ` Reason: ${reason}` : ''}`,
+          meta:    { submissionId: sub._id, assignmentName: sub.assignmentName, moduleCode: sub.moduleCode, studentName: sub.student.username, reason },
+        });
       }
     } catch (notifErr) { console.error('⚠️ Regrade notification error:', notifErr.message); }
     res.json({ success: true, message: 'Re-grade request submitted.' });
